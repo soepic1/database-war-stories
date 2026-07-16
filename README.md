@@ -11,7 +11,7 @@ I'm Seun, a Lead Database Engineer working across AWS, GCP, and Oracle Cloud, op
 
 ## Case Studies
 
-- [Eliminating a 150M-Row Database Backlog Using Pure Metadata Operations](case-studies/01-partition-switch-migration.md) — how a silent, compounding archival failure grew to 159M unarchived rows on a production payment-switch database, and how I engineered a novel technique to clear the entire backlog in minutes instead of hours, with zero downtime.
+- [Eliminating a 150M-Row Database Backlog Using Pure Metadata Operations](case-studies/scripts/partition-switch-proc.sql) — how a silent, compounding archival failure grew to 159M unarchived rows on a production payment-switch database, and how I engineered a novel technique to clear the entire backlog in minutes instead of hours, with zero downtime.
 - More coming soon.
 
 ## Reusable Scripts
