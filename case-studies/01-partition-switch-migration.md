@@ -25,10 +25,10 @@ Neither bug was visible in isolation. Together, they explained the entire failur
 
 The real fix wasn't "run the copy faster" — it was recognizing we didn't need to copy data at all. SQL Server's native ALTER TABLE ... SWITCH PARTITION operation moves an entire partition's worth of data between two tables using *pure metadata reassignment* — no row-by-row copying, regardless of how much data is in that partition. It typically completes in milliseconds.
 
-```sql
+sql
 ALTER TABLE dbo.Transfers 
 SWITCH PARTITION @PartitionNumber 
-TO dbo.Transfers_Archive PARTITION @PartitionNumber;```
+TO dbo.Transfers_Archive PARTITION @PartitionNumber;
 
 The one hard requirement: the target partition must be completely empty. And because the backlog had been building for over a week, many of the target partitions in the archive table already had partial data in them from the failing nightly process — so a direct switch wasn't possible for those.
 The novel part: clearing a "dirty" backlog using zero row copying
