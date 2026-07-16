@@ -1,7 +1,9 @@
-# database-war-stories
-Real production database engineering problems, investigated and solved
+
+
 
 # Database War Stories
+
+
 
 Real production database engineering — the kind of problems that don't have a clean answer in the manual.
 
