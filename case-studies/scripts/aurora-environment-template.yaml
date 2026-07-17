@@ -1,0 +1,26 @@
+aurora:
+  databases:
+    - name: "enterprise-production-mysql-cluster"
+      username: "dbadmin"
+      engine: "aurora-mysql"
+      engine_version: "8.0.mysql_aurora.3.10.3"
+      instance_class: "db.r5.2xlarge"  
+      replica_instance_class: "db.r6g.2xlarge"
+      storage_type: "aurora-iopt1"
+      storage_encrypted: true
+      allocated_storage: 1
+      availability_zones: ["eu-west-2a", "eu-west-2b", "eu-west-2c"]
+      maintenance_window: "sat:02:00-sat:03:00" 
+      reader_identifier: "enterprise-production-mysql-reader-01"
+      backup_window: "05:00-05:30" 
+      skip_final_snapshot: true
+      create_read_replica: true 
+      apply_immediately: false
+      monitoring_interval: 60
+      monitoring_role_arn: "arn:aws:iam::111122223333:role/rds-monitoring-role"
+      backup_retention_period: 10
+      deletion_protection: true
+      publicly_accessible: false
+      db_subnet_group_name: "enterprise-production-database-subent-groups" 
+      vpc_security_group_ids:
+        - "sg-xxxxxxxxxxxxxxxxx"
