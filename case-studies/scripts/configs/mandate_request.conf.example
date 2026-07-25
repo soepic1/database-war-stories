@@ -1,0 +1,8 @@
+# ==============================================================================
+# gh-ost Configuration Secret File Template
+# Actual production file location on server: /etc/gh-ost/mandate_request.conf
+# File Permissions Required on Server: chmod 600
+# ==============================================================================
+
+user=gh_ost_user
+password=YourSecurePasswordHere
