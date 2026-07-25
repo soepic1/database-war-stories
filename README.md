@@ -25,7 +25,7 @@ Practical, battle-tested scripts referenced in the case studies above, generaliz
 - [scripts/docdb-environment-template.yaml](scripts/docdb-environment-template.yaml) — decoupled YAML configuration template for modular DocumentDB imports, referenced in case study #4
 - [scripts/aurora-environment-template.yaml](scripts/aurora-environment-template.yaml) — decoupled YAML configuration template for modular Aurora MySQL imports, referenced in case study #4
 - [scripts/traffic-light-dashboard.sql](scripts/traffic-light-dashboard.sql) -traffic light query, refernced in case #5
-- [`scripts/gh-ost-production-migration-runner.sh`](scripts/gh-ost-production-migration-runner.sh) — the production-safe gh-ost wrapper referenced in case study #4, with duplicate-run protection, secure credential handling, and replica-lag-aware throttling built in
+- [`scripts/gh-ost-production-migration-runner.sh`](06-large-table-schema-change-zero-impact.md) — the production-safe gh-ost wrapper referenced in case study #4, with duplicate-run protection, secure credential handling, and replica-lag-aware throttling built in
 
 ## About Me
 
