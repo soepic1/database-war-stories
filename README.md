@@ -11,6 +11,7 @@ I'm Seun, a Lead Database Engineer working across AWS, GCP, and Oracle Cloud, op
 - [Building Production Database Observability From Scratch](case-studies/03-production-database-observability.md) — how I turned a database with almost no structured visibility into one with real lock-contention detection and per-query performance baselines, using nothing but MySQL's own Performance Schema.
 - [Standardized Infrastructure Importation of Core Aurora MySQL and Amazon DocumentDB Estates](case-studies/04-unified-modular-database-imports.md) — how I codified existing unmanaged database clusters into highly abstracted corporate modules with zero diff and zero live disruption.
 - [A Traffic-Light Dashboard for "Is the Database OK Right Now?"](case-studies/05-traffic-light-health-dashboard.md) - how I implemented a simple dashboard for the SRE to know if the database is fine at the moment.
+- [Adding Columns to a 171GB Production Table With Just Over One Second of Impact](case-studies/04-large-table-schema-change-zero-impact.md) — how I replaced a risky 70-minute native schema change with a replica-lag-aware online migration, moving 28 million rows on a live production system with just 1.06 seconds of actual query blocking.
 - More coming soon.
 
 ## Reusable Scripts
@@ -24,6 +25,7 @@ Practical, battle-tested scripts referenced in the case studies above, generaliz
 - [scripts/docdb-environment-template.yaml](scripts/docdb-environment-template.yaml) — decoupled YAML configuration template for modular DocumentDB imports, referenced in case study #4
 - [scripts/aurora-environment-template.yaml](scripts/aurora-environment-template.yaml) — decoupled YAML configuration template for modular Aurora MySQL imports, referenced in case study #4
 - [scripts/traffic-light-dashboard.sql](scripts/traffic-light-dashboard.sql) -traffic light query, refernced in case #5
+- [`scripts/gh-ost-production-migration-runner.sh`](scripts/gh-ost-production-migration-runner.sh) — the production-safe gh-ost wrapper referenced in case study #4, with duplicate-run protection, secure credential handling, and replica-lag-aware throttling built in
 
 ## About Me
 
