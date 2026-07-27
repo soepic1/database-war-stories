@@ -38,6 +38,9 @@ The Outcome
 
 mandate_request (indexes, ~171GB / 28M+ rows): [1h3m34s(total)], [1h3m33s]
 mandate (columns + indexes, ~2.2GB/ 1195495 rows): [2m13s], [ 2m12s]
+
+
+
 Broader Takeaways
 Parallel isn't always faster in the way that matters. When multiple independent tools are each individually managing risk against a shared resource, sequential execution can be the more genuinely safe choice, even at the cost of total wall-clock time.
 Production incidents (or near-misses) are the best source of hardening ideas. The stale-socket cleanup and cutover timeout tuning both came directly from friction encountered running the pattern for real, not from reading documentation in advance.
