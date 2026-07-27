@@ -55,6 +55,7 @@ Implementation Note:
 The orchestration script intentionally runs gh-ost in the foreground for Table 1 and blocks until the atomic table swap is completely finished before invoking Table 2. It also includes pre-flight checks (pgrep execution guards and stale /tmp/*.sock file cleanups) to ensure reliable background execution via automated crontab schedulers.
 
 Orchestration Script (scripts/run-phase2-orchestration.sh)
+bash
 
 #!/usr/bin/env bash
 set -euo pipefail
