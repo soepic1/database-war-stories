@@ -55,21 +55,10 @@ Implementation Note:
 The orchestration script intentionally runs gh-ost in the foreground for Table 1 and blocks until the atomic table swap is completely finished before invoking Table 2. It also includes pre-flight checks (pgrep execution guards and stale /tmp/*.sock file cleanups) to ensure reliable background execution via automated crontab schedulers.
 
 Orchestration Script (scripts/run-phase2-orchestration.sh)
-bash
 
+Bash
 #!/usr/bin/env bash
 set -euo pipefail
-
-# ==============================================================================
-# Multi-Table Production gh-ost Sequential Migration Orchestrator
-#
-# Key Features:
-# 1. Sequential Execution: Migrates Table 1, verifies completion/cutover, 
-#    and only then initiates Table 2.
-# 2. Duplicate Execution Protection: Uses `pgrep` checks per table.
-# 3. Dynamic Replica Lag Monitoring: Directly polls downstream read replicas.
-# 4. Stale Socket Cleanup: Automatically cleans up `/tmp` sockets before start.
-# ==============================================================================
 
 # --- Global Database Connection Configs ---
 PRIMARY_HOST="<production_primary_host>"
