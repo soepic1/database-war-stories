@@ -27,7 +27,7 @@ Practical, battle-tested scripts referenced in the case studies above, generaliz
 - [scripts/aurora-environment-template.yaml](scripts/aurora-environment-template.yaml) — decoupled YAML configuration template for modular Aurora MySQL imports, referenced in case study #4
 - [scripts/traffic-light-dashboard.sql](scripts/traffic-light-dashboard.sql) -traffic light query, refernced in case #5
 - [`scripts/gh-ost-production-migration-runner.sh`](case-studies/scripts/gh-ost-production-migration-runner.sh) — the production-safe gh-ost wrapper referenced in case study #6, with duplicate-run protection, secure credential handling, and replica-lag-aware throttling builtin.
-- [`scripts/gh-ost-multi-table-sequential-orchestrator.sh`](case-studies/07-orchestrating-sequential-multi-table-migrations.md) — reusable sequential multi-table gh-ost orchestration with stale-socket cleanup and dependency-ordered execution
+- [`scripts/gh-ost-multi-table-sequential-orchestrator.sh`](case-studies/scripts/gh-ost-multi-table-sequential-orchestrator.sh) — reusable sequential multi-table gh-ost orchestration with stale-socket cleanup and dependency-ordered execution
 
 ## About Me
 
