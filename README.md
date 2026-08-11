@@ -13,6 +13,7 @@ I'm Seun, a Lead Database Engineer working across AWS, GCP, and Oracle Cloud, op
 - [A Traffic-Light Dashboard for "Is the Database OK Right Now?"](case-studies/05-traffic-light-dashboard.md) - how I implemented a simple dashboard for the SRE to know if the database is fine at the moment.
 - [Adding Columns to a 171GB Production Table With Just Over One Second of Impact](case-studies/06-large-table-schema-change-zero-impact.md) — how I replaced a risky 70-minute native schema change with a replica-lag-aware online migration, moving 28 million rows on a live production system with just 1.06 seconds of actual query blocking.
 - [Orchestrating Safe Sequential Migrations Across Multiple Production Tables](case-studies/07-orchestrating-sequential-multi-table-migrations.md) — a reusable pattern for safely sequencing multiple production schema changes without doubling risk exposure.
+- [The Missing Privilege AWS's Own Documentation Didn't Mention](case-studies/09-postgresql-logical-replication-permission-gap.md) 
 - More coming soon.
 
 ## Reusable Scripts
@@ -28,6 +29,7 @@ Practical, battle-tested scripts referenced in the case studies above, generaliz
 - [scripts/traffic-light-dashboard.sql](scripts/traffic-light-dashboard.sql) -traffic light query, refernced in case #5
 - [`scripts/gh-ost-production-migration-runner.sh`](case-studies/scripts/gh-ost-production-migration-runner.sh) — the production-safe gh-ost wrapper referenced in case study #6, with duplicate-run protection, secure credential handling, and replica-lag-aware throttling builtin.
 - [`scripts/gh-ost-multi-table-sequential-orchestrator.sh`](case-studies/scripts/gh-ost-multi-table-sequential-orchestrator.sh) — reusable sequential multi-table gh-ost orchestration with stale-socket cleanup and dependency-ordered execution
+-  [`scripts/dms-postgres-task-config-example.yaml`](scripts/dms-postgres-task-config-example.yaml) — complete, redacted reference DMS configuration for PostgreSQL logical replication, referenced in case study #9
 
 ## About Me
 
