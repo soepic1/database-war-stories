@@ -22,7 +22,7 @@ With AWS Support, the true root cause emerged: the dedicated replication user â€
 ```sql
 ALTER SCHEMA public OWNER TO dms_user;
 GRANT ALL ON SCHEMA public TO dms_user;
-GRANT ALL ON DATABASE ptsp_postgres_db TO dms_user;
+GRANT ALL ON DATABASE databasename TO dms_user;
 ```
 
 This turned out to be a known issue reported by others on AWS's own community forums â€” not something obviously covered in the primary setup documentation.
