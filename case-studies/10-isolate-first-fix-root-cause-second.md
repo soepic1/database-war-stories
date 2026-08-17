@@ -26,6 +26,16 @@ Rather than waiting for the application team's fix (already in progress, but not
 
 The before/after is unambiguous: the main instance's CPU/memory pattern — spiky and erratic through weeks of investigation — flattens completely from the moment of migration onward. The new dedicated instance, running on a quarter of the compute, handles the exact same workload at near-zero load. The workload was never "too heavy" — it was fighting for shared resources with everything else.
 
+
+**Before decoupling — main instance (128 vCPU):**
+<img width="2792" height="1454" alt="providerpool" src="https://github.com/user-attachments/assets/bbfbc97e-ae92-4f23-98db-de068861a247" />
+
+**After decoupling — dedicated instance (32 vCPU), same workload:**
+[Dedicated instance CPU load after decoupling, showing near-zero utilization]
+<img width="2880" height="1738" alt="maindb" src="https://github.com/user-attachments/assets/0eab591c-a34f-44a3-a10b-7251256bf04e" />
+
+
+
 ## Broader Takeaways
 
 - **A senior stakeholder's plausible theory still needs evidence, not just deference or argument.** Being right required data, not authority on either side.
