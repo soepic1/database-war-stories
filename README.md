@@ -13,7 +13,9 @@ I'm Seun, a Lead Database Engineer working across AWS, GCP, and Oracle Cloud, op
 - [A Traffic-Light Dashboard for "Is the Database OK Right Now?"](case-studies/05-traffic-light-dashboard.md) - how I implemented a simple dashboard for the SRE to know if the database is fine at the moment.
 - [Adding Columns to a 171GB Production Table With Just Over One Second of Impact](case-studies/06-large-table-schema-change-zero-impact.md) — how I replaced a risky 70-minute native schema change with a replica-lag-aware online migration, moving 28 million rows on a live production system with just 1.06 seconds of actual query blocking.
 - [Orchestrating Safe Sequential Migrations Across Multiple Production Tables](case-studies/07-orchestrating-sequential-multi-table-migrations.md) — a reusable pattern for safely sequencing multiple production schema changes without doubling risk exposure.
-- [The Missing Privilege AWS's Own Documentation Didn't Mention](case-studies/09-postgresql-logical-replication-permission-gap.md) 
+- [The Missing Privilege AWS's Own Documentation Didn't Mention](case-studies/09-postgresql-logical-replication-permission-gap.md)
+- [Isolate First, Fix Root Cause Second: Correcting a Month-Long Incident Theory With Evidence](case-studies/10-isolate-first-fix-root-cause-second.md) — how rigorous, evidence-based investigation corrected a plausible-but-wrong incident theory and led to a pragmatic architectural fix.
+
 - More coming soon.
 
 ## Reusable Scripts
