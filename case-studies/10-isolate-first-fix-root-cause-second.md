@@ -28,11 +28,14 @@ The before/after is unambiguous: the main instance's CPU/memory pattern — spik
 
 
 **Before decoupling — main instance (128 vCPU):**
-<img width="2792" height="1454" alt="providerpool" src="https://github.com/user-attachments/assets/bbfbc97e-ae92-4f23-98db-de068861a247" />
+<img width="1186" height="484" alt="Screenshot 2026-08-17 at 11 28 42" src="https://github.com/user-attachments/assets/402b90a9-615f-4e27-a6c4-b641f4a5ed39" />
+
 
 **After decoupling — dedicated instance (32 vCPU), same workload:**
 [Dedicated instance CPU load after decoupling, showing near-zero utilization]
-<img width="2880" height="1738" alt="maindb" src="https://github.com/user-attachments/assets/0eab591c-a34f-44a3-a10b-7251256bf04e" />
+The new dedicated instance, running on a quarter of the compute, handles the exact same workload at near-zero load. The workload was never "too heavy" — it was fighting for shared resources with everything else.
+<img width="2792" height="1454" alt="providerpool" src="https://github.com/user-attachments/assets/fe1252e3-2e20-43a5-8340-f459d53a5596" />
+
 
 
 
