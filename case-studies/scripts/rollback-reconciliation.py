@@ -12,8 +12,8 @@ import time
 import pymysql
 
 # --- CONFIGURATION ---
-SOURCE_HOST = "SOURCE_DB_IP"       # Old primary instance (e.g., 18.28.63.88)
-TARGET_HOST = "TARGET_DB_IP"       # Cutover instance (e.g., 334.689.109.165)
+SOURCE_HOST = "SOURCE_DB_IP"       # Old primary instance (e.g., 192.0.2.10)
+TARGET_HOST = "TARGET_DB_IP"       # Cutover instance (e.g., 192.0.2.20)
 DB_USER = "username"
 DB_NAME = "databasename"
 
