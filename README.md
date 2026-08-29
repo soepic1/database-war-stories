@@ -33,7 +33,7 @@ Practical, battle-tested scripts referenced in the case studies above, generaliz
 - [`scripts/gh-ost-production-migration-runner.sh`](case-studies/scripts/gh-ost-production-migration-runner.sh) — the production-safe gh-ost wrapper referenced in case study #6, with duplicate-run protection, secure credential handling, and replica-lag-aware throttling builtin.
 - [`scripts/gh-ost-multi-table-sequential-orchestrator.sh`](case-studies/scripts/gh-ost-multi-table-sequential-orchestrator.sh) — reusable sequential multi-table gh-ost orchestration with stale-socket cleanup and dependency-ordered execution
 -  [`scripts/dms-postgres-task-config-example.yaml`](case-studies/scripts/ms-postgres-task-config-example.yaml) — complete, redacted reference DMS configuration for PostgreSQL logical replication, referenced in case study #9
--  [scripts/rollback_reconciliation_new.py](scripts/rollback_reconciliation_new.py) — multi-stage MySQL target-delta extraction, staging, classification, and verification reconciliation tool referenced in case study #11
+-  [scripts/rollback_reconciliation_new.py](case-studies/scripts/rollback-reconciliation.py) — multi-stage MySQL target-delta extraction, staging, classification, and verification reconciliation tool referenced in case study #11
 
 ## About Me
 
