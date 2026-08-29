@@ -36,7 +36,7 @@ Replication Lag Cascade: Bulk updates write massive transaction entries into the
 
 Undo/Redo Log Exhaustion: Unbounded transactions inflate the InnoDB undo tablespace, causing disk IOPS spikes that starve concurrent application queries.
 
-3. The Forensic Investigation & Safety Architecture
+## 3. The Forensic Investigation & Safety Architecture
 Before writing a single line of recovery code, we performed a deep-dive analysis of the table geometry and index access paths on monnify_account_provider.deallocated_accounts.
 
 Query Execution Plan Analysis
@@ -113,7 +113,7 @@ update_loop: LOOP
 END LOOP update_loop;
 ```
 
-The Results
+## 5 The Results
 135,995 Accounts Recycled: Harvested almost the entire historical backlog of deallocated accounts for provider 23283, building a massive operational safety cushion.
 
 0 Lock-Wait Timeouts: Live checkout traffic experienced zero latency spikes or table lock contention during the entire execution.
