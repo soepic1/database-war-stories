@@ -60,10 +60,6 @@ We built a two-tier automated pipeline consisting of a **Python Orchestrator** a
 
  AUTOMATION ARCHITECTURE
                        
-## 4. The Engineering Solution
-
-We built a two-tier automated pipeline consisting of a **Python Orchestrator** and a **Micro-Batched MySQL Stored Procedure**.
-
 
 ```text
                            AUTOMATION ARCHITECTURE
