@@ -85,7 +85,7 @@ We built a two-tier automated pipeline consisting of a **Python Orchestrator** a
 Stored Procedure Pattern (Micro-Batched Commit)
 
 ```
-The full DDL deployment script is located in scripts/pool-replenish/batch_update_deallocated_accounts.sql.
+The full DDL deployment script is located in case-studies/scripts/pool-replenish/batch_update_deallocated_accounts.sql
 ```
 
 -- Core micro-commit loop pattern inside the stored procedure
