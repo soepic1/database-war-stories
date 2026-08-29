@@ -16,6 +16,7 @@ I'm Seun, a Lead Database Engineer working across AWS, GCP, and Oracle Cloud, op
 - [The Missing Privilege AWS's Own Documentation Didn't Mention](case-studies/09-postgresql-logical-replication-permission-gap.md)
 - [Isolate First, Fix Root Cause Second: Correcting a Month-Long Incident Theory With Evidence](case-studies/10-isolate-first-fix-root-cause-second.md) — how rigorous, evidence-based investigation corrected a plausible-but-wrong incident theory and led to a pragmatic architectural fix.
 -  [The 25TB Ghost: Rescuing Live Traffic from a "0s Lag" GCP DMS Pipeline Failure](case-studies/11-The%2025TB%20Ghost%3A%20Rescuing%20Live%20Traffic%20from%20a%20%220s%20Lag%22%20GCP%20DMS%20Pipeline%20Failure.md) — how a crashed GCP DMS worker masked itself behind a frozen "0s lag" UI metric during a database downsizing cutover, and how I engineered a custom multi-stage Python delta reconciliation tool to backfill 100k+ live transactions back to the primary database with zero data loss.
+-  [The 100k Depleted Pool: Rescuing Live Checkout Traffic from Account Starvation](case-studies/12-The-100k-Depleted-Pool-Rescuing-Live-Checkout-Traffic-from-Account-Starvation.md) — how depleted virtual bank account allocation pools threatened live payment checkout operations, and how I engineered a replica-aware, non-blocking Python worker backed by an iterative micro-batched MySQL stored procedure to safely recycle 135k+ historical accounts with zero lock contention.
 
 - More coming soon.
 
@@ -34,6 +35,7 @@ Practical, battle-tested scripts referenced in the case studies above, generaliz
 - [`scripts/gh-ost-multi-table-sequential-orchestrator.sh`](case-studies/scripts/gh-ost-multi-table-sequential-orchestrator.sh) — reusable sequential multi-table gh-ost orchestration with stale-socket cleanup and dependency-ordered execution
 -  [`scripts/dms-postgres-task-config-example.yaml`](case-studies/scripts/ms-postgres-task-config-example.yaml) — complete, redacted reference DMS configuration for PostgreSQL logical replication, referenced in case study #9
 -  [scripts/rollback_reconciliation_new.py](case-studies/scripts/rollback-reconciliation.py) — multi-stage MySQL target-delta extraction, staging, classification, and verification reconciliation tool referenced in case study #11
+-  [case-studies/scripts/pool-replenish/](case-studies/scripts/pool-replenish) — replica-aware pool monitoring Python orchestrator and micro-batched MySQL stored procedure for safe account recycling, referenced in case study #12
 
 ## About Me
 
