@@ -14,8 +14,8 @@ import pymysql
 # --- CONFIGURATION ---
 SOURCE_HOST = "SOURCE_DB_IP"       # Old primary instance (e.g., 18.28.63.88)
 TARGET_HOST = "TARGET_DB_IP"       # Cutover instance (e.g., 334.689.109.165)
-DB_USER = "oluwaseun.oladele"
-DB_NAME = "monnify_account_provider"
+DB_USER = "username"
+DB_NAME = "databasename"
 
 # Boundary timestamp when cutover began
 BOUNDARY_TS = "2026-08-29 01:28:02"
