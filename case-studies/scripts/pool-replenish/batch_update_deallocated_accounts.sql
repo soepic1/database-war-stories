@@ -1,4 +1,4 @@
-USE `database_name`;
+USE `account_provider_db`;
 
 -- =============================================================================
 -- Procedure: batch_update_deallocated_accounts
@@ -9,13 +9,16 @@ USE `database_name`;
 --   p_provider_code   - Target provider (e.g., '23283')
 --   p_cutoff_datetime - Datetime threshold for deallocation age
 --   p_max_rows        - Hard ceiling for total rows to process in one run (default: 100000)
+-- 
+-- Recommended Crontab Deployment:
+--   0 */4 * * * export $(cat /home/deploy/scripts/pool_replenish/.env | xargs); /usr/bin/python3 /home/deploy/scripts/pool_replenish/pool_replenish.py >> /home/deploy/scripts/pool_replenish/pool_replenish.log 2>&1
 -- =============================================================================
 
 DROP PROCEDURE IF EXISTS `batch_update_deallocated_accounts`;
 
 DELIMITER $$
 
-CREATE DEFINER=`definername`@`%` PROCEDURE `batch_update_deallocated_accounts`(
+CREATE DEFINER=`app_admin`@`%` PROCEDURE `batch_update_deallocated_accounts`(
     IN  p_provider_code   VARCHAR(10),
     IN  p_cutoff_datetime DATETIME,
     IN  p_max_rows        INT,
@@ -82,7 +85,7 @@ proc_body: BEGIN
 
     INSERT INTO tmp_target_dealloc_accounts (account_number, provider_code)
     SELECT account_number, provider_code
-    FROM monnify_account_provider.deallocated_accounts
+    FROM deallocated_accounts
     WHERE provider_code = p_provider_code
       AND account_deallocated_at < p_cutoff_datetime
       AND merchant_id IS NOT NULL
@@ -109,7 +112,7 @@ proc_body: BEGIN
 
         START TRANSACTION;
 
-            UPDATE monnify_account_provider.deallocated_accounts main
+            UPDATE deallocated_accounts main
             JOIN (
                 SELECT account_number, provider_code
                 FROM tmp_target_dealloc_accounts
@@ -146,7 +149,3 @@ proc_body: BEGIN
 END$$
 
 DELIMITER ;
-
-
-
-
