@@ -37,7 +37,7 @@ Replication Lag Cascade: Bulk updates write massive transaction entries into the
 Undo/Redo Log Exhaustion: Unbounded transactions inflate the InnoDB undo tablespace, causing disk IOPS spikes that starve concurrent application queries.
 
 ## 3. The Forensic Investigation & Safety Architecture
-Before writing a single line of recovery code, we performed a deep-dive analysis of the table geometry and index access paths on monnify_account_provider.deallocated_accounts.
+Before writing a single line of recovery code, we performed a deep-dive analysis of the table geometry and index access paths on database_name.deallocated_accounts.
 
 Query Execution Plan Analysis
 We identified that historical accounts were bound to specific deallocation timestamps (account_deallocated_at). To prevent unindexed full table scans, we leveraged the compound index idx_provider_deallocated_at (provider_code, account_deallocated_at).
