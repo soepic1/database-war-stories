@@ -73,3 +73,10 @@ We built a two-tier automated pipeline consisting of a **Python Orchestrator** a
 |                    | --------------------------> |   (8.228.63.88)    |
 +--------------------+ <-------------------------- +--------------------+
 Completed 100k Recycles
+
+
+## 5. Deployment & Production Validation
+The pipeline was deployed with a 4-hour cron schedule, dynamically loading environment configurations and capturing detailed log traces:
+
+Code snippet
+0 */4 * * * export $(cat /home/oluwaseun.oladele/scripts/pool_replenish/.env | xargs); /usr/bin/python3 /home/o/scripts/pool_replenish/pool_replenish.py >> /home/o/scripts/pool_replenish/pool_replenish.log 2>&1
