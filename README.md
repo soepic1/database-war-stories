@@ -15,6 +15,7 @@ I'm Seun, a Lead Database Engineer working across AWS, GCP, and Oracle Cloud, op
 - [Orchestrating Safe Sequential Migrations Across Multiple Production Tables](case-studies/07-orchestrating-sequential-multi-table-migrations.md) — a reusable pattern for safely sequencing multiple production schema changes without doubling risk exposure.
 - [The Missing Privilege AWS's Own Documentation Didn't Mention](case-studies/09-postgresql-logical-replication-permission-gap.md)
 - [Isolate First, Fix Root Cause Second: Correcting a Month-Long Incident Theory With Evidence](case-studies/10-isolate-first-fix-root-cause-second.md) — how rigorous, evidence-based investigation corrected a plausible-but-wrong incident theory and led to a pragmatic architectural fix.
+-  [The 25TB Ghost: Rescuing Live Traffic from a "0s Lag" GCP DMS Pipeline Failure](case-studies/11-The%2025TB%20Ghost%3A%20Rescuing%20Live%20Traffic%20from%20a%20%220s%20Lag%22%20GCP%20DMS%20Pipeline%20Failure.md) — how a crashed GCP DMS worker masked itself behind a frozen "0s lag" UI metric during a database downsizing cutover, and how I engineered a custom multi-stage Python delta reconciliation tool to backfill 100k+ live transactions back to the primary database with zero data loss.
 
 - More coming soon.
 
