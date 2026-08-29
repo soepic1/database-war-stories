@@ -43,9 +43,9 @@ We identified that historical accounts were bound to specific deallocation times
 
 To guarantee zero impact on active payment processing, we established **Four Absolute Engineering Guardrails**:
 
-1. **Read-Write Topology Separation:** Inventory counts and historical lookback probes MUST run exclusively against the Read Replica (`35.246.74.141`), preserving Primary DB IOPS.
+1. **Read-Write Topology Separation:** Inventory counts and historical lookback probes MUST run exclusively against the Read Replica (`10.0.1.50`), preserving Primary DB IOPS.
 2. **Replication Safety Circuit Breaker:** The system MUST inspect `Seconds_Behind_Master` before initiating work. If replication lag exceeds 30 seconds, execution immediately aborts.
-3. **Fail-Fast Distributed Locking:** The worker MUST acquire a non-blocking MySQL advisory lock (`GET_LOCK('monnify_pool_replenish_lock', 0)`) on the Master DB (`8.228.63.88`). If another job is running, it exits instantly without queueing.
+3. **Fail-Fast Distributed Locking:** The worker MUST acquire a non-blocking MySQL advisory lock (`GET_LOCK('monnify_pool_replenish_lock', 0)`) on the Master DB (`10.0.1.10`). If another job is running, it exits instantly without queueing.
 4. **Decoupled Snapshotting with Micro-Commits:** The stored procedure MUST copy target primary keys into an in-memory temporary table first, then process updates in strict **1,000-row chunks**, committing each chunk independently and sleeping `50ms` between iterations.
 
 ---
@@ -71,75 +71,16 @@ We built a two-tier automated pipeline consisting of a **Python Orchestrator** a
                                       v
    +--------------------+  1. Probe Inventory & Lag   +--------------------+
    |                    | --------------------------> |    Read Replica    |
-   |                    | <-------------------------- |   (35.246.74.141)  |
+   |                    | <-------------------------- |   (10.0.1.50)  |
    |   Python Worker    |    Available < Watermark    +--------------------+
    | (pool_replenish.py)|
    |                    |  2. Acquire Advisory Lock   +--------------------+
    |                    |  & Execute Stored Proc      |     Master DB      |
-   |                    | --------------------------> |   (8.228.63.88)    |
+   |                    | --------------------------> |   (10.0.1.10)    |
    +--------------------+ <-------------------------- +--------------------+
                                Completed 100k Recycles
 ```
-### Stored Procedure Design: `batch_update_deallocated_accounts`
 
-The core database engine updates records iteratively without locking active production data:
-
-```sql
--- 1. Snapshot target IDs into a temporary table indexed on Primary Key
-CREATE TEMPORARY TABLE tmp_target_dealloc_accounts (
-    account_number VARCHAR(10) NOT NULL,
-    provider_code  VARCHAR(10) NOT NULL,
-    PRIMARY KEY (account_number, provider_code)
-) ENGINE=InnoDB;
-
-INSERT INTO tmp_target_dealloc_accounts (account_number, provider_code)
-SELECT account_number, provider_code
-FROM monnify_account_provider.deallocated_accounts
-WHERE provider_code = p_provider_code
-  AND account_deallocated_at < p_cutoff_datetime
-  AND merchant_id IS NOT NULL
-ORDER BY account_deallocated_at ASC
-LIMIT p_max_rows;
-
--- 2. Micro-commit loop: process 1,000 rows at a time
-update_loop: LOOP
-    SELECT COUNT(*) INTO v_remaining FROM tmp_target_dealloc_accounts;
-    IF v_remaining = 0 THEN
-        LEAVE update_loop;
-    END IF;
-
-    START TRANSACTION;
-        UPDATE monnify_account_provider.deallocated_accounts main
-        JOIN (
-            SELECT account_number, provider_code
-            FROM tmp_target_dealloc_accounts
-            ORDER BY account_number, provider_code
-            LIMIT 1000
-        ) batch
-          ON main.account_number = batch.account_number
-         AND main.provider_code  = batch.provider_code
-        SET main.account_ready_for_allocation_at = NOW(),
-            main.merchant_id      = NULL,
-            main.status           = 'AVAILABLE',
-            main.last_modified_on = NOW();
-
-        DELETE FROM tmp_target_dealloc_accounts
-        ORDER BY account_number, provider_code
-        LIMIT 1000;
-    COMMIT;
-
-    DO SLEEP(0.05); -- Yield lock time back to live checkout traffic
-END LOOP update_loop;
-```
-
-## 5. Deployment & Production Validation
-The pipeline was deployed with a 4-hour cron schedule, dynamically loading environment configurations and capturing detailed log traces:
-
-Code snippet
-```markdown
-```cron
-0 */4 * * * export $(cat /home/oluwaseun.oladele/scripts/pool_replenish/.env | xargs); /usr/bin/python3 /home/oluwaseun.oladele/scripts/pool_replenish/pool_replenish.py >> /home/oluwaseun.oladele/scripts/pool_replenish/pool_replenish.log 2>&1
-```
 
 
 
