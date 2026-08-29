@@ -56,27 +56,102 @@ We built a two-tier automated pipeline consisting of a **Python Orchestrator** a
 
  AUTOMATION ARCHITECTURE
                        
-        AUTOMATION ARCHITECTURE
-                       
-             +------------------------------------------+
-             |       Cron Job (Every 4 Hours)           |
-             +------------------------------------------+
-                                  |
-                                  v
-+--------------------+  1. Probe Inventory & Lag   +--------------------+
-|                    | --------------------------> |    Read Replica    |
-|                    | <-------------------------- |   (35.246.74.141)  |
-|   Python Worker    |    Available < Watermark    +--------------------+
-| (pool_replenish.py)|
-|                    |  2. Acquire Advisory Lock   +--------------------+
-|                    |  & Execute Stored Proc      |     Master DB      |
-|                    | --------------------------> |   (8.228.63.88)    |
-+--------------------+ <-------------------------- +--------------------+
-Completed 100k Recycles
+## 4. The Engineering Solution
 
+We built a two-tier automated pipeline consisting of a **Python Orchestrator** and a **Micro-Batched MySQL Stored Procedure**.
+
+```text
+                           AUTOMATION ARCHITECTURE
+                           
+                 +------------------------------------------+
+                 |       Cron Job (Every 4 Hours)           |
+                 +------------------------------------------+
+                                      |
+                                      v
+   +--------------------+  1. Probe Inventory & Lag   +--------------------+
+   |                    | --------------------------> |    Read Replica    |
+   |                    | <-------------------------- |   (35.246.74.141)  |
+   |   Python Worker    |    Available < Watermark    +--------------------+
+   | (pool_replenish.py)|
+   |                    |  2. Acquire Advisory Lock   +--------------------+
+   |                    |  & Execute Stored Proc      |     Master DB      |
+   |                    | --------------------------> |   (8.228.63.88)    |
+   +--------------------+ <-------------------------- +--------------------+
+                               Completed 100k Recycles`
+```
+### Stored Procedure Design: `batch_update_deallocated_accounts`
+
+The core database engine updates records iteratively without locking active production data:
+
+```sql
+-- 1. Snapshot target IDs into a temporary table indexed on Primary Key
+CREATE TEMPORARY TABLE tmp_target_dealloc_accounts (
+    account_number VARCHAR(10) NOT NULL,
+    provider_code  VARCHAR(10) NOT NULL,
+    PRIMARY KEY (account_number, provider_code)
+) ENGINE=InnoDB;
+
+INSERT INTO tmp_target_dealloc_accounts (account_number, provider_code)
+SELECT account_number, provider_code
+FROM monnify_account_provider.deallocated_accounts
+WHERE provider_code = p_provider_code
+  AND account_deallocated_at < p_cutoff_datetime
+  AND merchant_id IS NOT NULL
+ORDER BY account_deallocated_at ASC
+LIMIT p_max_rows;
+
+-- 2. Micro-commit loop: process 1,000 rows at a time
+update_loop: LOOP
+    SELECT COUNT(*) INTO v_remaining FROM tmp_target_dealloc_accounts;
+    IF v_remaining = 0 THEN
+        LEAVE update_loop;
+    END IF;
+
+    START TRANSACTION;
+        UPDATE monnify_account_provider.deallocated_accounts main
+        JOIN (
+            SELECT account_number, provider_code
+            FROM tmp_target_dealloc_accounts
+            ORDER BY account_number, provider_code
+            LIMIT 1000
+        ) batch
+          ON main.account_number = batch.account_number
+         AND main.provider_code  = batch.provider_code
+        SET main.account_ready_for_allocation_at = NOW(),
+            main.merchant_id      = NULL,
+            main.status           = 'AVAILABLE',
+            main.last_modified_on = NOW();
+
+        DELETE FROM tmp_target_dealloc_accounts
+        ORDER BY account_number, provider_code
+        LIMIT 1000;
+    COMMIT;
+
+    DO SLEEP(0.05); -- Yield lock time back to live checkout traffic
+END LOOP update_loop;
+```
 
 ## 5. Deployment & Production Validation
 The pipeline was deployed with a 4-hour cron schedule, dynamically loading environment configurations and capturing detailed log traces:
 
 Code snippet
+```
 0 */4 * * * export $(cat /home/oluwaseun.oladele/scripts/pool_replenish/.env | xargs); /usr/bin/python3 /home/o/scripts/pool_replenish/pool_replenish.py >> /home/o/scripts/pool_replenish/pool_replenish.log 2>&1
+```
+
+
+
+The Results
+
+135,995 Accounts Recycled: Harvested almost the entire historical backlog of deallocated accounts for provider 23283, building a massive operational safety cushion.
+
+0 Lock-Wait Timeouts: Live checkout traffic experienced zero latency spikes or table lock contention during the entire execution.
+
+100% Operational Relief: Completely eliminated manual SRE/DBA intervention for account pool maintenance. The SRE team officially decommissioned manual pool tracking.
+
+## 6. Key Takeaways & Architectural Lessons
+Never UPDATE at Scale in Single Transactions: When operating on tables with millions of rows, unbounded UPDATE statements are ticking time bombs. Always isolate target primary keys into temporary structures and chunk executions in micro-transactions.
+
+Protect the Master with Replica Pre-Flight Probes: Heavy count aggregation queries belong on Read Replicas. Master DB connections should only be established when actionable write work is confirmed.
+
+Respect Operational Human Capital: Engineering time shouldn't be spent babysitting database counts. Building resilient, self-healing background automation restores peace of mind and frees teams to focus on core platform engineering.
