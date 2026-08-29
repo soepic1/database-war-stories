@@ -24,29 +24,33 @@ Maintaining healthy account inventory had devolved into a recurring, high-fricti
 ### The Technical Dilemma
 Why is recycling historical accounts in a massive relational database so dangerous?
 
+```text
 [ Unbounded UPDATE Query ] ──> [ Multi-Second InnoDB Range Lock ] ──> [ Live API Blocked ]
-│
-└──> [ Replica Lag Spikes ] ──> [ Out of Memory / Timeout ]
+                                             │
+                                             └──> [ Replica Lag Spikes ] ──> [ Out of Memory / Timeout ]
 
-1. **Exclusive Lock Contention:** A direct SQL update like `UPDATE deallocated_accounts SET status = 'AVAILABLE' WHERE ...` scans thousands of pages. InnoDB acquires exclusive row and gap locks, queuing live application write operations behind the long-running transaction.
-2. **Replication Lag Cascade:** Bulk updates write massive transaction entries into the binary log all at once. Read replicas processing the stream fall minutes—or hours—behind the Primary DB, corrupting read-heavy routing logic across the platform.
-3. **Undo/Redo Log Exhaustion:** Unbounded transactions inflate the InnoDB undo tablespace, causing disk IOPS spikes that starve concurrent application queries.
+```
+Exclusive Lock Contention: A direct SQL update like UPDATE deallocated_accounts SET status = 'AVAILABLE' WHERE ... scans thousands of pages. InnoDB acquires exclusive row and gap locks, queuing live application write operations behind the long-running transaction.
 
----
+Replication Lag Cascade: Bulk updates write massive transaction entries into the binary log all at once. Read replicas processing the stream fall minutes—or hours—behind the Primary DB, corrupting read-heavy routing logic across the platform.
 
-## 3. The Forensic Investigation & Safety Architecture
+Undo/Redo Log Exhaustion: Unbounded transactions inflate the InnoDB undo tablespace, causing disk IOPS spikes that starve concurrent application queries.
 
-Before writing a single line of recovery code, we performed a deep-dive analysis of the table geometry and index access paths on `schemaname.tablename`.
+3. The Forensic Investigation & Safety Architecture
+Before writing a single line of recovery code, we performed a deep-dive analysis of the table geometry and index access paths on monnify_account_provider.deallocated_accounts.
 
-### Query Execution Plan Analysis
-We identified that historical accounts were bound to specific deallocation timestamps (`account_deallocated_at`). To prevent unindexed full table scans, we leveraged the compound index `idx_provider_deallocated_at` (`provider_code`, `account_deallocated_at`).
+Query Execution Plan Analysis
+We identified that historical accounts were bound to specific deallocation timestamps (account_deallocated_at). To prevent unindexed full table scans, we leveraged the compound index idx_provider_deallocated_at (provider_code, account_deallocated_at).
 
-To guarantee zero impact on active payment processing, we established **Four Absolute Engineering Guardrails**:
+To guarantee zero impact on active payment processing, we established Four Absolute Engineering Guardrails:
 
-1. **Read-Write Topology Separation:** Inventory counts and historical lookback probes MUST run exclusively against the Read Replica (`10.0.1.50`), preserving Primary DB IOPS.
-2. **Replication Safety Circuit Breaker:** The system MUST inspect `Seconds_Behind_Master` before initiating work. If replication lag exceeds 30 seconds, execution immediately aborts.
-3. **Fail-Fast Distributed Locking:** The worker MUST acquire a non-blocking MySQL advisory lock (`GET_LOCK('monnify_pool_replenish_lock', 0)`) on the Master DB (`10.0.1.10`). If another job is running, it exits instantly without queueing.
-4. **Decoupled Snapshotting with Micro-Commits:** The stored procedure MUST copy target primary keys into an in-memory temporary table first, then process updates in strict **1,000-row chunks**, committing each chunk independently and sleeping `50ms` between iterations.
+Read-Write Topology Separation: Inventory counts and historical lookback probes MUST run exclusively against the Read Replica (10.0.1.50), preserving Primary DB IOPS.
+
+Replication Safety Circuit Breaker: The system MUST inspect Seconds_Behind_Master before initiating work. If replication lag exceeds 30 seconds, execution immediately aborts.
+
+Fail-Fast Distributed Locking: The worker MUST acquire a non-blocking MySQL advisory lock (GET_LOCK('monnify_pool_replenish_lock', 0)) on the Master DB (10.0.1.10). If another job is running, it exits instantly without queueing.
+
+Decoupled Snapshotting with Micro-Commits: The stored procedure MUST copy target primary keys into an in-memory temporary table first, then process updates in strict 1,000-row chunks, committing each chunk independently and sleeping 50ms between iterations.
 
 ---
 
@@ -82,10 +86,36 @@ We built a two-tier automated pipeline consisting of a **Python Orchestrator** a
 ```
 
 
+Stored Procedure Pattern (Micro-Batched Commit)
+The full DDL deployment script is located in scripts/pool-replenish/batch_update_deallocated_accounts.sql
 
+
+-- Core micro-commit loop pattern inside the stored procedure
+```
+update_loop: LOOP
+    SELECT COUNT(*) INTO v_remaining FROM tmp_target_dealloc_accounts;
+    IF v_remaining = 0 THEN
+        LEAVE update_loop;
+    END IF;
+
+    START TRANSACTION;
+        UPDATE deallocated_accounts main
+        JOIN (
+            SELECT account_number, provider_code
+            FROM tmp_target_dealloc_accounts
+            ORDER BY account_number, provider_code
+            LIMIT 1000
+        ) batch ON main.account_number = batch.account_number
+        SET main.status = 'AVAILABLE', main.merchant_id = NULL;
+
+        DELETE FROM tmp_target_dealloc_accounts LIMIT 1000;
+    COMMIT;
+
+    DO SLEEP(0.05); -- Yield lock time back to live checkout traffic
+END LOOP update_loop;
+```
 
 The Results
-
 135,995 Accounts Recycled: Harvested almost the entire historical backlog of deallocated accounts for provider 23283, building a massive operational safety cushion.
 
 0 Lock-Wait Timeouts: Live checkout traffic experienced zero latency spikes or table lock contention during the entire execution.
