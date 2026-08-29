@@ -36,7 +36,7 @@ Why is recycling historical accounts in a massive relational database so dangero
 
 ## 3. The Forensic Investigation & Safety Architecture
 
-Before writing a single line of recovery code, we performed a deep-dive analysis of the table geometry and index access paths on `monnify_account_provider.deallocated_accounts`.
+Before writing a single line of recovery code, we performed a deep-dive analysis of the table geometry and index access paths on `schemaname.tablename`.
 
 ### Query Execution Plan Analysis
 We identified that historical accounts were bound to specific deallocation timestamps (`account_deallocated_at`). To prevent unindexed full table scans, we leveraged the compound index `idx_provider_deallocated_at` (`provider_code`, `account_deallocated_at`).
