@@ -54,7 +54,9 @@ To guarantee zero impact on active payment processing, we established **Four Abs
 
 We built a two-tier automated pipeline consisting of a **Python Orchestrator** and a **Micro-Batched MySQL Stored Procedure**.
 
-                       AUTOMATION ARCHITECTURE
+ AUTOMATION ARCHITECTURE
+                       
+        AUTOMATION ARCHITECTURE
                        
              +------------------------------------------+
              |       Cron Job (Every 4 Hours)           |
