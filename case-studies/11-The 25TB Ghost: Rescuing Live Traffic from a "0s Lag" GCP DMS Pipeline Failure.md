@@ -25,7 +25,7 @@ This post-mortem details the root cause of the silent failure, why metrics lied,
 ┌──────────────────┐               GCP DMS (CDC)               ┌──────────────────┐
 │   Source DB      │ ────────────────────────────────────────> │    Target DB     │
 │ (25TB Provisioned│                 [CRASHED]                 │  (Right-sized)   │
-│   8.228.63.88)   │                                           │  34.89.109.165   │
+│   192.0.2.10)   │                                           │  192.0.2.20  │
 └──────────────────┘                                           └──────────────────┘
          ▲                                                               │
          │                                                               │
@@ -34,8 +34,8 @@ This post-mortem details the root cause of the silent failure, why metrics lied,
 
 ```
 
-* **Source Instance:** Primary production database (`8.228.63.88`), heavily over-provisioned at 25 TB storage for a 100 GB dataset.
-* **Target Instance:** New instance (`34.89.109.165`) provisioned for cost optimization.
+* **Source Instance:** Primary production database (`192.0.2.10`), heavily over-provisioned at 25 TB storage for a 100 GB dataset.
+* **Target Instance:** New instance (`192.0.2.20`) provisioned for cost optimization.
 * **Replication Mechanism:** GCP Database Migration Service (DMS) running full dump + continuous CDC replication.
 
 ---
@@ -62,7 +62,7 @@ Because the target instance did not contain the custom DBA `monitoring` schema o
 Replication lag in CDC pipeline metrics is calculated as:
 
 
-$$\text{Lag} = T_{\text{current}} - T_{\text{last\_processed\_binlog\_timestamp}}$$
+`Lag` = `T_current` - `T_last_processed_binlog_timestamp`
 
 When the DMS replication worker hard-crashed, **no new binlog positions were evaluated**. The metric engine stopped updating telemetry, leaving the GCP dashboard frozen on the last successfully reported value: **`0 seconds lag`**.
 
