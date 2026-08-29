@@ -60,6 +60,7 @@ We built a two-tier automated pipeline consisting of a **Python Orchestrator** a
 
 We built a two-tier automated pipeline consisting of a **Python Orchestrator** and a **Micro-Batched MySQL Stored Procedure**.
 
+
 ```text
                            AUTOMATION ARCHITECTURE
                            
@@ -77,7 +78,7 @@ We built a two-tier automated pipeline consisting of a **Python Orchestrator** a
    |                    |  & Execute Stored Proc      |     Master DB      |
    |                    | --------------------------> |   (8.228.63.88)    |
    +--------------------+ <-------------------------- +--------------------+
-                               Completed 100k Recycles`
+                               Completed 100k Recycles
 ```
 ### Stored Procedure Design: `batch_update_deallocated_accounts`
 
@@ -135,8 +136,9 @@ END LOOP update_loop;
 The pipeline was deployed with a 4-hour cron schedule, dynamically loading environment configurations and capturing detailed log traces:
 
 Code snippet
-```
-0 */4 * * * export $(cat /home/oluwaseun.oladele/scripts/pool_replenish/.env | xargs); /usr/bin/python3 /home/o/scripts/pool_replenish/pool_replenish.py >> /home/o/scripts/pool_replenish/pool_replenish.log 2>&1
+```markdown
+```cron
+0 */4 * * * export $(cat /home/oluwaseun.oladele/scripts/pool_replenish/.env | xargs); /usr/bin/python3 /home/oluwaseun.oladele/scripts/pool_replenish/pool_replenish.py >> /home/oluwaseun.oladele/scripts/pool_replenish/pool_replenish.log 2>&1
 ```
 
 
