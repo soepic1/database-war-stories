@@ -1,0 +1,30 @@
+[Unit]
+Description=Non-Invasive Cloud SQL Slow Query & Lock Watchdog Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/scripts/pool_replenish
+EnvironmentFile=/opt/scripts/pool_replenish/watchdog.env
+ExecStart=/opt/scripts/pool_replenish/venv/bin/python3 /opt/scripts/pool_replenish/slow_query_watchdog.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
+
+# BASH
+
+# Copy systemd unit file
+sudo cp slow-query-watchdog.service /etc/systemd/system/
+
+# Reload systemd and enable service on startup
+sudo systemctl daemon-reload
+sudo systemctl enable slow-query-watchdog
+sudo systemctl start slow-query-watchdog
+
+# Verify operational status & logs
+sudo systemctl status slow-query-watchdog
+sudo journalctl -u slow-query-watchdog -f
