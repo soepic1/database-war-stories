@@ -1,4 +1,4 @@
-# Database War Stories: The Silent Lock Spikes and the $0.00 Observability Fix
+## The Silent Lock Spikes and the $0.00 Observability Fix
 
 ### The Incident: Death by 1,000 Uncommitted Transactions
 
