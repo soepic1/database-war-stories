@@ -78,10 +78,13 @@ To make the system self-sustaining, we added two database-native features:
 
 ## Technical Quick Start & Deployment Guide
 
-### Associated Scripts & Configs
-* [`scripts/pool-replenish/watchdog/slow_query_watchdog.py`](scripts/pool-replenish/watchdog/slow_query_watchdog.py) — Main polling daemon & lock dependency chain evaluator.
-* [`scripts/pool-replenish/watchdog/incident_postmortem.py`](scripts/pool-replenish/watchdog/incident_postmortem.py) — Automated Markdown RCA generator.
-* [`scripts/pool-replenish/watchdog/watchdog.env.example`](scripts/pool-replenish/watchdog/watchdog.env.example) — Sanitized configuration template.
+
+### Associated Scripts & Production Artifacts
+* [`slow_query_watchdog.py`](scripts/pool-replenish/watchdog/slow_query_watchdog.py) — Main polling daemon & lock dependency chain evaluator.
+* [`incident_postmortem.py`](scripts/pool-replenish/watchdog/incident_postmortem.py) — Automated Markdown RCA generator.
+* [`watchdog.env.example`](scripts/pool-replenish/watchdog/watchdog.env.example) — Sanitized environment template.
+* [`setup_user.sql`](scripts/pool-replenish/watchdog/setup_user.sql) — Least-privilege MySQL RBAC user setup script.
+* [`slow-query-watchdog.service`](scripts/pool-replenish/watchdog/slow-query-watchdog.service) — Production systemd service unit file.
 
 ### Execution
 1. Create environment file: `cp watchdog.env.example watchdog.env` and populate DB credentials.
