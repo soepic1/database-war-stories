@@ -76,3 +76,17 @@ To make the system self-sustaining, we added two database-native features:
 
 ---
 
+## Technical Quick Start & Deployment Guide
+
+### Associated Scripts & Configs
+* [`scripts/pool-replenish/watchdog/slow_query_watchdog.py`](scripts/pool-replenish/watchdog/slow_query_watchdog.py) — Main polling daemon & lock dependency chain evaluator.
+* [`scripts/pool-replenish/watchdog/incident_postmortem.py`](scripts/pool-replenish/watchdog/incident_postmortem.py) — Automated Markdown RCA generator.
+* [`scripts/pool-replenish/watchdog/watchdog.env.example`](scripts/pool-replenish/watchdog/watchdog.env.example) — Sanitized configuration template.
+
+### Execution
+1. Create environment file: `cp watchdog.env.example watchdog.env` and populate DB credentials.
+2. Install dependencies: `pip install pymysql requests`
+3. Run daemon: `python3 slow_query_watchdog.py`
+
+---
+
