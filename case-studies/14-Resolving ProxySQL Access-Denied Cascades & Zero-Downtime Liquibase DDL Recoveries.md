@@ -2,18 +2,18 @@
 # Case Study 14: Resolving ProxySQL Access-Denied Cascades & Zero-Downtime Liquibase DDL Recoveries
 
 ## Executive Summary
-In multi-tier MySQL architectures utilizing ProxySQL for connection pooling and query routing, stale or desynchronized credentials in ProxySQL's memory layer (`runtime_mysql_users`) can completely isolate application microservices. This case study details a severe production incident where a credential sync error at the ProxySQL proxy layer caused cascading HikariCP pool initialisation failures (`Access denied for user 'dd-tapt-auth-svc'`), followed by Liquibase deployment locks on high-velocity tables. It outlines the end-to-end remediation path: safely purging/rebuilding ProxySQL runtime user tables, bypassing ProxySQL to perform non-blocking `ALGORITHM=INPLACE` online DDL updates, and manually reconciling Liquibase tracking states to restore service availability.
+In multi-tier MySQL architectures utilizing ProxySQL for connection pooling and query routing, stale or desynchronized credentials in ProxySQL's memory layer (`runtime_mysql_users`) can completely isolate application microservices. This case study details a severe production incident where a credential sync error at the ProxySQL proxy layer caused cascading HikariCP pool initialisation failures (`Access denied for user 'proxy-user-name'`), followed by Liquibase deployment locks on high-velocity tables. It outlines the end-to-end remediation path: safely purging/rebuilding ProxySQL runtime user tables, bypassing ProxySQL to perform non-blocking `ALGORITHM=INPLACE` online DDL updates, and manually reconciling Liquibase tracking states to restore service availability.
 
 ---
 
 ## 1. Initial Failure: ProxySQL Connection Handshake Rejection
 
-Immediately following a deployment rollout of the `dd-tapt-auth-svc` authentication microservice, application pods entered a crash-loop state. HikariCP connection pools failed to initialize during Spring Boot's context startup:
+Immediately following a deployment rollout of the `proxy-user-name` authentication microservice, application pods entered a crash-loop state. HikariCP connection pools failed to initialize during Spring Boot's context startup:
 
 ```text
 2026-09-10 14:54:49.259 "Caused by: org.springframework.beans.BeanInstantiationException: 
 Failed to instantiate [javax.sql.DataSource]: Factory method 'dataSource' threw exception with message: 
-Failed to initialize pool: ProxySQL Error: Access denied for user 'dd-tapt-auth-svc'@'10.20.91.62' (using password: YES)"
+Failed to initialize pool: ProxySQL Error: Access denied for user 'proxy-user-name'@'10.0.0.1' (using password: YES)"
 ```
 
 
