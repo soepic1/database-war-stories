@@ -1,4 +1,4 @@
-```markdown
+
 # Case Study 14: Resolving ProxySQL Access-Denied Cascades & Zero-Downtime Liquibase DDL Recoveries
 
 ## Executive Summary
@@ -14,8 +14,8 @@ Immediately following a deployment rollout of the `dd-tapt-auth-svc` authenticat
 2026-09-10 14:54:49.259 "Caused by: org.springframework.beans.BeanInstantiationException: 
 Failed to instantiate [javax.sql.DataSource]: Factory method 'dataSource' threw exception with message: 
 Failed to initialize pool: ProxySQL Error: Access denied for user 'dd-tapt-auth-svc'@'10.20.91.62' (using password: YES)"
-
 ```
+
 
 ### Root Cause Analysis (Phase 1)
 
