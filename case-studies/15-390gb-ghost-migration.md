@@ -1,9 +1,6 @@
-### 🚀 Master Deliverable: Full Comprehensive Technical Article
-
-
 ---
 
-```markdown
+
 # Zero-Downtime Schema Migration on a 390GB Core Payment Gateway: Migrating 144M Records with a 1-Second Table Lock Using gh-ost
 
 
@@ -53,6 +50,7 @@ Every incoming bank transfer, card payment, or terminal transaction generates a 
 MySQL 8.0 supports native Online DDL (`ALGORITHM=INPLACE, LOCK=NONE`). While native DDL is fast, on a 390GB table handling thousands of concurrent writes per second, it introduces four unacceptable production hazards:
 
 ```
+
 +-----------------------------------+---------------------------------------------------------+-------------------------------------------------------+
 | Production Failure Mode           | Native Online DDL (ALGORITHM=INPLACE)                   | Asynchronous Binlog Migration (gh-ost)                |
 +-----------------------------------+---------------------------------------------------------+-------------------------------------------------------+
@@ -67,8 +65,8 @@ MySQL 8.0 supports native Online DDL (`ALGORITHM=INPLACE, LOCK=NONE`). While nat
 +-----------------------------------+---------------------------------------------------------+-------------------------------------------------------+
 | 4. Operational Control            | Once triggered, cannot be paused or scheduled.          | Fully controllable via Unix socket (postpone/throttle)|
 +-----------------------------------+---------------------------------------------------------+-------------------------------------------------------+
-```
 
+```
 Because read replicas power real-time merchant reporting and monitoring dashboards, introducing an hour of replica lag was a non-starter. We chose GitHub’s `gh-ost`.
 
 ---
