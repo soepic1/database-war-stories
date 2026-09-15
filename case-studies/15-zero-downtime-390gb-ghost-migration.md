@@ -47,7 +47,9 @@ Every incoming bank transfer, card payment, or terminal transaction generates a 
 
 ## 2. Architectural Evaluation: Why Native Online DDL Was Rejected
 
-MySQL 8.0 supports native Online DDL (`ALGORITHM=INPLACE, LOCK=NONE`). While native DDL is fast, on a 390GB table handling thousands of concurrent writes per second, it introduces four unacceptable production hazards:
+MySQL 8.0 supports native Online DDL (`ALGORITHM=INPLACE, LOCK=NONE`). We evaluated this approach for the migration, but the expected operational behaviour under sustained write pressure did not meet our production risk tolerance.
+
+The primary concerns were replication impact, metadata lock contention, the behaviour of the online DDL mechanism under sustained concurrent DML, and the level of operational control available once the operation was underway:
 
 ```
 
@@ -67,7 +69,7 @@ MySQL 8.0 supports native Online DDL (`ALGORITHM=INPLACE, LOCK=NONE`). While nat
 +-----------------------------------+---------------------------------------------------------+-------------------------------------------------------+
 
 ```
-Because read replicas power real-time merchant reporting and monitoring dashboards, introducing an hour of replica lag was a non-starter. We chose GitHub’s `gh-ost`.
+Because the read replicas supported real-time merchant reporting and monitoring, we needed a migration strategy that could actively respond to replication lag and production load. Based on this evaluation, we selected GitHub's `gh-ost` for its asynchronous migration model, binlog-based change capture, throttling controls, and controlled cut-over mechanism..
 
 ---
 
@@ -196,7 +198,7 @@ When the prefix matches (`fff...` vs `ffffff...`), the migration is within secon
 
 ## 5. The Cut-Over Sequence & Results
 
-At 06:29:47 UTC, `gh-ost` reached the final primary key chunk and executed its patented atomic table swap:
+At 06:29:47 UTC, `gh-ost` reached the final primary key chunk and executed its atomic table rename/swap:
 
 ```text
 2026-09-15 06:29:47 INFO Setting RENAME timeout as 3 seconds
