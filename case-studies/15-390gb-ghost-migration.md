@@ -1,9 +1,5 @@
 ### 🚀 Master Deliverable: Full Comprehensive Technical Article
 
-Here is the **complete, unabridged, long-form engineering case study** formatted in GitHub-flavored Markdown. 
-
-You can save this directly into your repository at:
-`https://github.com/soepic1/database-war-stories/blob/main/case-studies/01-moniepoint-390gb-ghost-migration.md`
 
 ---
 
