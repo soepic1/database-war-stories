@@ -1,7 +1,7 @@
 ---
 
 
-# Zero-Downtime Schema Migration on a 390GB Core Payment Gateway: Migrating 144M Records with a 1-Second Table Lock Using gh-ost
+# How I migrated 144 million UUID-keyed payment records with a 1-second cut-over while navigating replica lag, throttling traps, and misleading migration metrics
 
 
 ---
