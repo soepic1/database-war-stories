@@ -265,9 +265,3 @@ The lessons learned from this 144M-row migration were synthesized into direct op
 
 ---
 
-
----
-
-mit the Pull Request referencing your issue number!
-
----
