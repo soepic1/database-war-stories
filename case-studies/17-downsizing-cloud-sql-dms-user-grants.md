@@ -29,7 +29,7 @@ In cloud infrastructure, over-provisioned enterprise block storage (such as Goog
 | Old Provisioned Footprint:  25,000 GB (25 TB)                                 |
 | Actual Active Data Footprint:  ~700 GB                                        |
 | Unused / Ghost Storage:     24,300 GB (~97.2% Over-Provisioned)               |
-| Target Downtime Tolerance:  0 minutes (Continuous 24/7 Payment Processing)    |
+| Target Downtime Tolerance:  5-10 minutes (Continuous 24/7 Payment Processing)    |
 +-------------------------------------------------------------------------------+
 ```
 
@@ -128,7 +128,7 @@ Within **5 seconds** of executing `FLUSH PRIVILEGES;`, application connection po
 | Metric | Pre-Migration (Old Instance) | Post-Migration (New Instance) | Variance / Impact |
 |---|---|---|---|
 | **Storage Allocated** | **25,000 GB (25 TB)** | **700 GB** | **-97.2% reduction** |
-| **Downtime Incurred** | 3–4 Hours (Projected In-Place) | **< 30 Seconds (Traffic Switch)** | **100% SLA compliance** |
+| **Downtime Incurred** | 3–4 Hours (Projected In-Place) | **< 5 minutes (Traffic Switch)** | **100% SLA compliance** |
 | **Infrastructure Cost** | Massive Over-Provisioned Monthly Bill | Optimized Right-Sized Tier | **Significant monthly savings** |
 | **Replication Health** | Historical Lag Spikes | 0.00s Real-Time Lag | Restored clean I/O headroom |
 
