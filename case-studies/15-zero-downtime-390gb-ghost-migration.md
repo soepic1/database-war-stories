@@ -250,7 +250,7 @@ On managed cloud databases (Google Cloud SQL / AWS RDS):
 
 The lessons learned from this 144M-row migration were synthesized into direct open-source contributions to the `github/gh-ost` repository:
 
-1. **GitHub Issue #1766:** *Operational insights & ETA overshoot on large UUID-keyed tables (140M+ rows)*
+1. **GitHub Issue #1775:** *Operational insights & ETA overshoot on large UUID-keyed tables (140M+ rows)*
 2. **GitHub Pull Request #1767:** *Clarify operational differences between throttling and postponing cut-over*
 3. **GitHub Pull Request #1745 (Merged in Release v1.1.8):** *Clarify replica selection requirements for `--throttle-control-replicas`*
 
