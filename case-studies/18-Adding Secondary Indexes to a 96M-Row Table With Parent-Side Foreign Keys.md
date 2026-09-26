@@ -5,7 +5,7 @@ While our standard operational playbook mandates asynchronous binlog-based tooli
 
 Using `gh-ost` would risk severing referential integrity due to MySQL's internal data dictionary rename semantics, while `pt-online-schema-change`'s `rebuild_constraints` mode threatened to hold exclusive metadata locks on 61 million child rows for hours, risking a major payment outage.
 
-Instead, we designed and executed an optimized **Native MySQL 8.0 Online DDL (`ALGORITHM=INPLACE, LOCK=NONE`)** pattern paired with an expanded in-memory concurrent DML buffer and replica durability tuning. The migration completed in **35 minutes on production** with **zero dropped transactions, zero connection pool spikes, and zero gateway timeouts**.
+Instead, we designed and executed an optimized **Native MySQL 8.0 Online DDL (`ALGORITHM=INPLACE, LOCK=NONE`)** pattern paired with an expanded in-memory concurrent DML buffer and replica durability tuning. The migration completed in **37 minutes on production** with **zero dropped transactions, zero connection pool spikes, and zero gateway timeouts**.
 
 ---
 
@@ -59,7 +59,7 @@ ALTER TABLE transaction
 ### A. Why `gh-ost` Failed at Pre-Flight
 When initializing `gh-ost 1.1.7`, the inspector threw a fatal error:
 ```text
-2026-09-21 23:00:01 ERROR Found 1 parent-side foreign keys on `monnify`.`transaction`. 
+2026-09-21 23:00:01 ERROR Found 1 parent-side foreign keys on `databasename`.`transaction`. 
 Parent-side foreign keys are not supported. Bailing out
 ```
 
@@ -132,7 +132,7 @@ SET GLOBAL innodb_flush_log_at_trx_commit = 2;
 
 #### Step 4: Live Execution
 ```sql
-ALTER TABLE monnify.transaction 
+ALTER TABLE databasename.transaction 
   ADD INDEX IDX_transaction_masked_card_number (masked_card_number), 
   ADD INDEX IDX_transaction_last_four_digits (last_four_digits),
   ALGORITHM=INPLACE, 
