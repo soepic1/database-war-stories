@@ -1,7 +1,7 @@
 ##  Executive Summary
 To optimize high-throughput card transaction lookups and merchant reconciliation queries on our core payment gateway, we needed to add two secondary indexes (`masked_card_number` and the virtual generated column `last_four_digits`) to our primary ledger table, `transaction` (~96 million rows).
 
-While our standard operational playbook mandates asynchronous binlog-based tooling (`gh-ost`), the migration was immediately aborted by pre-flight checks: **a critical child table (`tokenized_transaction`, ~61 million rows) held a parent-side foreign key referencing `transaction.id`.**
+While our standard operational playbook mandates asynchronous binlog-based tooling (`gh-ost`), the migration was immediately aborted by pre-flight checks: **a critical child table (`tok_transaction`, ~61 million rows) held a parent-side foreign key referencing `transaction.id`.**
 
 Using `gh-ost` would risk severing referential integrity due to MySQL's internal data dictionary rename semantics, while `pt-online-schema-change`'s `rebuild_constraints` mode threatened to hold exclusive metadata locks on 61 million child rows for hours, risking a major payment outage.
 
@@ -18,7 +18,7 @@ The `transaction` table anchors all card payment attempts across POS terminals, 
                                           │
                                (1:N Foreign Key)
                                           ▼
-                         [tokenized_transaction (61M Rows)]
+                         [tok_transaction (61M Rows)]
 ```
 
 ### Table DDL Definition:
@@ -68,14 +68,14 @@ Querying `INFORMATION_SCHEMA.KEY_COLUMN_USAGE` revealed the blocker:
 SELECT TABLE_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME 
 FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
 WHERE REFERENCED_TABLE_NAME = 'transaction';
--- Result: `tokenized_transaction` (61.4M rows) references `transaction` (id)
+-- Result: `tok_transaction` (61.4M rows) references `transaction` (id)
 ```
 
 **The Mechanics:** In InnoDB, foreign key constraints reference the table's internal dictionary object ID, not merely its string name. During `gh-ost` cut-over (`RENAME TABLE transaction TO _del, _gho TO transaction`), child constraints follow the old table (`_del`), permanently severing relationships to the new table. To prevent silent corruption, `gh-ost` enforces a hard exit.
 
 ### B. Why `pt-online-schema-change` Was Rejected
 1. **Trigger Tax:** `pt-osc` attaches synchronous triggers (`AFTER INSERT, UPDATE, DELETE`) to live payment writes, which would double write latency during card transaction spikes.
-2. **The 61M-Row Constraint Rebuild Lock:** With `--alter-foreign-keys-method=rebuild_constraints`, `pt-osc` executes `ALTER TABLE tokenized_transaction DROP FOREIGN KEY ..., ADD CONSTRAINT ...`. Re-adding an FK on 61M rows requires an exclusive metadata lock and a full validation scan under shared read lock (`LOCK=SHARED`), freezing writes on tokenization for an estimated 20–40 minutes.
+2. **The 61M-Row Constraint Rebuild Lock:** With `--alter-foreign-keys-method=rebuild_constraints`, `pt-osc` executes `ALTER TABLE tok_transaction DROP FOREIGN KEY ..., ADD CONSTRAINT ...`. Re-adding an FK on 61M rows requires an exclusive metadata lock and a full validation scan under shared read lock (`LOCK=SHARED`), freezing writes on tokenization for an estimated 20–40 minutes.
 
 ### C. The Solution: Native MySQL 8.0 `INPLACE`
 In MySQL 8.0, adding secondary indexes using `ALGORITHM=INPLACE` **does not rebuild the table**. It reads the clustered index, sorts the key values, and constructs isolated secondary B-Trees in tablespace pages, allowing completely concurrent, non-blocking DML (`LOCK=NONE`).
