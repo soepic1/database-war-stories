@@ -124,11 +124,11 @@ SET SESSION lock_wait_timeout = 30;
 
 #### Step 3: Replica Durability Acceleration (Preventing Extended Lag)
 While `INPLACE` DDL runs on the primary, read replicas apply the statement sequentially via SQL worker threads. To accelerate binlog catch-up post-execution, we temporarily adjusted durability flags on both read replicas:
-```sql
--- Executed on Read Replicas
+``
+-- Executed on Read Replicas( Ensure this is set on the flag)
 SET GLOBAL sync_binlog = 0;
 SET GLOBAL innodb_flush_log_at_trx_commit = 2;
-```
+``
 
 #### Step 4: Live Execution
 ```sql
