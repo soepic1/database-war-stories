@@ -171,7 +171,6 @@ WHERE EVENT_NAME LIKE 'stage/innodb/alter%';
 ### Production Outcomes:
 * **Total Execution Time:** **37 minutes, 12 seconds** (accounting for live concurrent writes).
 * **Payment Ingestion Disruption:** **0.00%** (zero queued lock waits, zero failed card authorizations).
-* **Online Log Buffer Headroom:** Peak concurrent write churn consumed less than 8% of the 1GB buffer.
 * **Storage Growth:** Added ~5.2 GB of index page extents to `transaction.ibd`, well within provisioned capacity.
 * **Replica Lag Recovery:** Replicas caught up to `Seconds_Behind_Source: 0` in under 8 minutes post-execution with relaxed `sync_binlog` settings.
 
