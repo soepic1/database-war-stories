@@ -114,6 +114,4 @@ Executing `kubectl rollout restart deployment/servicename` fully unblocked appli
 2. **Back Up ProxySQL State Before Modifying `mysql_users`:** Always create an in-memory backup table (`mysql_users_backup_YYYYMMDD`) and copy `/var/lib/proxysql/proxysql.db` before purging runtime users under incident pressure.
 3. **Decouple App Boot from Schema Mutations:** Running automated DDL inside Spring Boot/Liquibase context causes compounding incident cascades when connection/proxy layers experience transient failures.
 
-```
 
----
