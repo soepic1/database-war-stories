@@ -34,7 +34,10 @@ The primary database cluster handles live payment switching, card transaction au
 * **Source Instance:** AWS Aurora MySQL 8.0
 * **Destination Instance:** AWS Outposts RDS (MySQL Community 8.4)
 * **Active Storage Footprint:** ~1.6 TB provisioned tablespace (expanded storage)
-* **Payload Characteristics:** High write-throughput transaction records, partitioned daily card account tables, and legacy archive tables (`backoffice_transaction_records_archived_*`)
+* Historical archive data identified for exclusion:** More than 4.4 TB
+* Tables included in final export:** 216
+* Compressed dump size:** ~105GB
+* **Payload Characteristics:** High write-throughput transaction records, partitioned daily card account tables, and legacy archive tables (`redacted_table_*`)
 
 ### The Structural Bottleneck & Architecture Shift
 
@@ -50,6 +53,14 @@ The primary database cluster handles live payment switching, card transaction au
 | `withdrawal_card_daily_limit_<REDACTED>` | 84.48 GB | 22.62 GB | 61.86 GB | 73,988,624 |
 
 ---
+The source contained high-volume transaction tables, partitioned records, and historical archive tables. Transferring every table would have increased the migration payload substantially without meeting an additional requirement in the agreed destination scope.
+
+The migration therefore had two primary constraints:
+
+ i. Preserve the required production dataset and its usable database objects.
+
+ ii. Exclude historical archive tables intentionally, while retaining a path to retrieve that data from the source environment if requirements changed.
+
 
 ## 2. The Architectural Dilemma: Tooling & Filter Failure Modes
 
