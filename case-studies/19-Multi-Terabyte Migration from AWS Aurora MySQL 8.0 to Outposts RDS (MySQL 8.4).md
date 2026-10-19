@@ -6,7 +6,7 @@ We migrated the required production datasets from an AWS Aurora MySQL 8.0 enviro
 
 The source environment spanned eight schemas with an approximately 1.6 TB active tablespace footprint, alongside more than 4.4 TB of historical partition and archive data identified as outside the required destination scope. Rather than transfer all historical data, we used metadata-driven filtering to identify 63 tables for exclusion.
 
-Our initial plan involved Aurora's native S3 export capabilities. After evaluating the destination compatibility and processing requirements, we used MySQL Shell's util.dump_instance() and util.load_dump() utilities to stream the required data through Amazon S3 during an approved maintenance window.
+Our initial plan involved Aurora's native S3 export capabilities. After evaluating the destination compatibility and processing requirements, we used MySQL Shell's `util.dump_instance()` and `util.load_dump()` utilities to stream the required data through Amazon S3 during an approved maintenance window.
 
 The resulting export covered 216 active tables and approximately 2.55 billion rows, with 746 GB of uncompressed data compressed to 105 GB using zstd. The dump completed in 26 minutes and 39 seconds. During restoration, we addressed MySQL 8.0-to-8.4 account compatibility issues, transient transfer failures, and target-side capacity constraints. The load resumed after interruption, and our recorded final validation reported no warnings or errors.
 
