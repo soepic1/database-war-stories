@@ -8,7 +8,9 @@ The source environment spanned eight schemas with an approximately 1.6 TB active
 
 Our initial plan involved Aurora's native S3 export capabilities. After evaluating the destination compatibility and processing requirements, we used MySQL Shell's `util.dump_instance()` and `util.load_dump()` utilities to stream the required data through Amazon S3 during an approved maintenance window.
 
-The resulting export covered 216 active tables and approximately 2.55 billion rows, with 746 GB of uncompressed data compressed to 105 GB using zstd. The dump completed in 26 minutes and 39 seconds. During restoration, we addressed MySQL 8.0-to-8.4 account compatibility issues, transient transfer failures, and target-side capacity constraints. The load resumed after interruption, and our recorded final validation reported no warnings or errors.
+The resulting export covered 216 active tables and approximately 2.55 billion rows, with 746 GB of uncompressed data compressed to 105 GB using Zstandard (zstd) compression. The dump completed in 26 minutes and 39 seconds. During restoration, we addressed MySQL 8.0-to-8.4 account compatibility issues, transient transfer failures, and target-side capacity constraints. The load resumed after interruption, and our recorded final validation reported no warnings or errors.
+
+Post-migration validation confirmed matching source and destination row counts for every included table. Indexes, stored procedures, events, and other applicable database objects were migrated and validated in the destination environment. Representative application-level and transaction checks were also performed.
 
 This case study documents the migration decisions, the failure modes encountered, the safeguards used, and the lessons learned when moving a large MySQL dataset between different managed database environments.
 
