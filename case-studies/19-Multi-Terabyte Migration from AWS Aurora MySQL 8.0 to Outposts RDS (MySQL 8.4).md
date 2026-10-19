@@ -2,11 +2,15 @@
 
 ## Executive Summary
 
-To comply with hybrid-cloud data residency mandates and reduce managed cloud storage overhead, we migrated our core payment ledger and settlement platform (~1.6 TB active tablespace footprint across 8 schemas) from **AWS Aurora MySQL 8.0** in an AWS Cloud Region to a **MySQL Community 8.4 instance on AWS Outposts RDS**.
+We migrated the required production datasets from an AWS Aurora MySQL 8.0 environment to Amazon RDS for MySQL 8.4 on AWS Outposts to meet hybrid-cloud data-residency requirements and reduce managed-cloud storage overhead.
 
-Our initial architecture plan was to use native AWS Aurora S3 export features. However, restoring native Aurora S3 export files directly onto an Outposts RDS instance required complex ETL orchestration (such as AWS Glue jobs) due to engine and storage format differences. Having been afforded an **approved maintenance window with application services shut down**, we pivoted to **MySQL Shell (`mysqlsh`) streaming utilities (`util.dump_instance` and `util.load_dump`)**.
+The source environment spanned eight schemas with an approximately 1.6 TB active tablespace footprint, alongside more than 4.4 TB of historical partition and archive data identified as outside the required destination scope. Rather than transfer all historical data, we used metadata-driven filtering to identify 63 tables for exclusion.
 
-By programmatically identifying and excluding **63 historical partition and archive tables** (~4.4 TB of non-essential data), tuning thread concurrency, and resolving MySQL 8.4 cross-version authentication and grant incompatibilities, we transferred **2.55 Billion rows (746 GB uncompressed / 105 GB compressed `zstd`) directly into AWS S3 in 26 minutes**, and completed a resumed, zero-data-loss restoration on Outposts RDS.
+Our initial plan involved Aurora's native S3 export capabilities. After evaluating the destination compatibility and processing requirements, we used MySQL Shell's util.dump_instance() and util.load_dump() utilities to stream the required data through Amazon S3 during an approved maintenance window.
+
+The resulting export covered 216 active tables and approximately 2.55 billion rows, with 746 GB of uncompressed data compressed to 105 GB using zstd. The dump completed in 26 minutes and 39 seconds. During restoration, we addressed MySQL 8.0-to-8.4 account compatibility issues, transient transfer failures, and target-side capacity constraints. The load resumed after interruption, and our recorded final validation reported no warnings or errors.
+
+This case study documents the migration decisions, the failure modes encountered, the safeguards used, and the lessons learned when moving a large MySQL dataset between different managed database environments.
 
 ---
 
