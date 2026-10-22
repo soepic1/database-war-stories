@@ -1,13 +1,14 @@
+# Multi-Database Migration: AWS Aurora PostgreSQL to AWS Outposts RDS via S3 
 
-# AWS Aurora PostgreSQL to AWS Outposts RDS Migration
-
-A production-tested runbook and technical strategy for migrating PostgreSQL databases across network boundaries from **AWS Aurora PostgreSQL (Cloud Region)** to **RDS PostgreSQL on AWS Outposts** using an S3 staging layer.
+A production-tested runbook and technical case study detailing the migration of multiple PostgreSQL databases across hybrid cloud boundaries—from **AWS Aurora PostgreSQL 14 (Cloud Region)** to **RDS PostgreSQL 17 on AWS Outposts**—using an asynchronous S3 staging pipeline to defeat cross-network connection timeouts.
 
 ---
 
-## 📌 Architectural Overview
+## Architectural Overview
 
-When migrating across hybrid cloud topologies, cross-network socket instability or latency over Direct Connect can break direct, long-running database dump streams. This pattern decouples the **Export (Cloud)** and **Import (Outposts)** operations using AWS S3 as an intermediate, fault-tolerant staging area.
+Migrating databases between an AWS Cloud Region and on-premises AWS Outposts infrastructure over Direct Connect or VPN tunnels introduces network latency and socket instability. Streaming a live `pg_dump | pg_restore` pipe over cross-network sockets risks sudden TCP drops, leaving the target database in a partially restored, corrupted state.
+
+To guarantee zero data corruption and decouple network failures, we engineered a 3-stage asynchronous migration strategy using Amazon S3 as an intermediate, fault-tolerant staging area:
 
 
 ```
@@ -43,134 +44,203 @@ When migrating across hybrid cloud topologies, cross-network socket instability 
 
 ---
 
-## 🛠 Prerequisites & Client Setup
+## Migration Pipeline Execution
 
-1. **Client Utility Matching:** The `pg_dump` and `pg_restore` versions installed on the EC2 VMs **must be equal to or newer than the target PostgreSQL engine version** (PostgreSQL 17.x in this implementation).
-2. **PostgreSQL Client Installation (Ubuntu/Debian):**
-   ```bash
-   sudo apt update && sudo apt install -y postgresql-common
-   sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
-   sudo apt update && sudo apt install -y postgresql-client-17
+### Phase 1: Source Export & Archive (Cloud VM)
 
-```
-
-3. **Storage Allocation:** Ensure the Cloud VM root volume has sufficient free disk space (`df -h .`) to hold uncompressed parallel dump directory files before archiving.
-
----
-
-## 🚀 Execution Steps
-
-### Step 1: Export Dumps from Source (Cloud VM)
-
-Run the multi-threaded directory format dump (`-Fd`) inside a persistent session (`tmux` or `screen`) to ensure network resilience:
+Running multi-threaded directory format dumps (`-Fd`) isolates database objects into parallel data chunks. Dumps were executed inside a `tmux` session on the Cloud EC2 instance to prevent network disconnects from interrupting execution:
 
 ```bash
-# Environment setup
+# 1. Start persistent tmux session
+tmux new -s pg_migration
+
+# 2. Configure environment
 export PGSSLMODE=require
 read -s PGPASSWORD && export PGPASSWORD
 
-SOURCE_HOST="aurora-writer-endpoint.rds.amazonaws.com"
+SOURCE_HOST="host_endpoint"
 DB_USER="admin_user"
 
-# Execute multi-threaded directory dumps
-pg_dump -h $SOURCE_HOST -U$DB_USER -d mpi_db -Fd -j 4 --no-owner --no-acl -v -f ./mpi_db_dump 2>&1 | tee dump_mpi.log
-pg_dump -h $SOURCE_HOST -U$DB_USER -d taccs_clearing_db -Fd -j 4 --no-owner --no-acl -v -f ./taccs_clearing_db_dump 2>&1 | tee dump_taccs_clearing.log
-pg_dump -h $SOURCE_HOST -U$DB_USER -d taccs_fee_db -Fd -j 4 --no-owner --no-acl -v -f ./taccs_fee_db_dump 2>&1 | tee dump_taccs_fee.log
+# 3. Export databases in parallel directory format
+pg_dump -h $SOURCE_HOST -U $DB_USER -d database_1 -Fd -j 4 --no-owner --no-acl -v -f ./database_1_dump 2>&1 | tee dump_database_1.log
+pg_dump -h $SOURCE_HOST -U $DB_USER -d database_2 -Fd -j 4 --no-owner --no-acl -v -f ./database_2_dump 2>&1 | tee dump_database_2.log
+pg_dump -h $SOURCE_HOST -U $DB_USER -d database_3 -Fd -j 4 --no-owner --no-acl -v -f ./database_3_dump 2>&1 | tee dump_database_3.log
 
-# Archive and push to S3 Staging
-tar -czvf all_databases_dump.tar.gz ./mpi_db_dump ./taccs_clearing_db_dump ./taccs_fee_db_dump
-aws s3 cp all_databases_dump.tar.gz s3://your-migration-bucket/pg_migration/
+# 4. Compress & stage to Amazon S3
+tar -czvf all_databases_dump.tar.gz ./database_1 ./database_2 ./database_3
+aws s3 cp all_databases_dump.tar.gz s3://database-prod-bucket/pg_migration/
 
 ```
 
 ---
 
-### Step 2: Target Database & Role Preparation
+### Phase 2: Target Database Preparation (Outposts RDS)
 
-Connect to the target Outposts RDS PostgreSQL instance and prepare roles and target databases:
+Connect to the Outposts RDS PostgreSQL instance  over the Local Gateway / Private IP to pre-create target database envelopes:
 
 ```sql
--- Connect via psql as master user
-CREATE DATABASE mpi_db OWNER app_owner_role;
-CREATE DATABASE taccs_clearing_db OWNER app_owner_role;
-CREATE DATABASE taccs_fee_db OWNER app_owner_role;
-
--- Grant role membership to allow object creation under owner context
-GRANT app_owner_role TO target_master_user;
+-- Executed on Outposts RDS via psql
+CREATE DATABASE database_1;
+CREATE DATABASE database_2;
+CREATE DATABASE database_3;
 
 ```
 
 ---
 
-### Step 3: Download & Import (Outposts VM)
+### Phase 3: Restore & Parallel Worker Execution (Outposts VM)
 
-Pull the archive from S3 and trigger parallel `pg_restore`:
+On the Outposts VM (`vm1`), pull the archive from S3, extract the directory dumps, and execute `pg_restore`:
 
 ```bash
-# Download and extract archive
-aws s3 cp s3://your-migration-bucket/pg_migration/all_databases_dump.tar.gz .
+# Pull and extract staged artifacts
+aws s3 cp s3://s3-bucket-name/pg_migration/all_databases_dump.tar.gz .
 tar -xzvf all_databases_dump.tar.gz
 
-# Environment setup
-export TARGET_HOST="10.59.4.223" # Outposts Local Gateway / Private IP
+# Configure Outposts target environment
+export TARGET_HOST="database host"
 export PGSSLMODE=require
 read -s PGPASSWORD && export PGPASSWORD
+TARGET_USER="user"
 
-TARGET_USER="target_master_user"
-APP_ROLE="app_owner_role"
-
-# Restore databases using application owner context
-pg_restore -h $TARGET_HOST -U $TARGET_USER -d mpi_db -j 4 --no-owner --no-acl --role=$APP_ROLE -v ./mpi_db_dump 2>&1 | tee restore_mpi.log
-pg_restore -h $TARGET_HOST -U $TARGET_USER -d taccs_clearing_db -j 4 --no-owner --no-acl --role=$APP_ROLE -v ./taccs_clearing_db_dump 2>&1 | tee restore_taccs_clearing.log
-pg_restore -h $TARGET_HOST -U $TARGET_USER -d taccs_fee_db -j 4 --no-owner --no-acl --role=$APP_ROLE -v ./taccs_fee_db_dump 2>&1 | tee restore_taccs_fee.log
+# Execute multi-threaded restore
+pg_restore -h $TARGET_HOST -U $TARGET_USER -d database_1 -j 4 --no-owner --no-acl -v ./database_1_dump 2>&1 | tee restore_database_1.log
+pg_restore -h $TARGET_HOST -U $TARGET_USER -d database_2 -j 4 --no-owner --no-acl -v ./database_2_dump 2>&1 | tee restore_database_2.log
+pg_restore -h $TARGET_HOST -U $TARGET_USER -d database_3 -j 4 --no-owner --no-acl -v ./database_3_dump 2>&1 | tee restore_database_3.log
 
 ```
 
 ---
 
-## ⚡ Troubleshooting & Operational Edge Cases
+## Real-World War Stories: Failures & Diagnoses
 
-### 1. `pg_restore: error: unsupported version (1.16) in file header`
+### Incident 1: Dump Header Version Mismatch (`unsupported version 1.16`)
 
-* **Root Cause:** Occurs when attempting to restore a directory dump generated by `pg_dump` v17+ using an older `pg_restore` binary (v14 or lower).
-* **Fix:** Upgrade the local `postgresql-client` packages on the restore host to matching PostgreSQL 17 binaries.
+* **Symptom:** When triggering `pg_restore` on the Outposts VM, execution failed immediately:
+```text
+pg_restore: error: unsupported version (1.16) in file header
 
-### 2. `ERROR: zero-length delimited identifier at or near ""` (`SET ROLE ""` Errors)
+```
 
-* **Root Cause:** When objects in the source database belong to dropped, unmapped, or blank roles, parallel worker threads (`-j 4`) attempt to execute `SET ROLE ""`.
-* **Impact:** **Harmless warning.** Passing `--no-owner` and `--role=$APP_ROLE` forces object creation and overrides ownership cleanly.
+
+* **Root Cause:** The Cloud EC2 instance ran `pg_dump` using PostgreSQL 17 client utilities (header version `1.16`), whereas the Outposts VM had an older `pg_restore` client binary installed (v14/v15). PostgreSQL dump format headers are not backward-compatible with older client binaries.
+* **Resolution:** Upgraded the PostgreSQL client suite on the Outposts VM to match the target engine version:
+```bash
+sudo apt update && sudo apt install -y postgresql-common
+sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+sudo apt update && sudo apt install -y postgresql-client-17
+
+```
+
+
 
 ---
 
-## ✅ Post-Migration Checklist & Validation
+### Incident 2: Cross-Network DNS Routing Timeout
 
-1. **Rebuild Optimizer Statistics:**
+* **Symptom:** `pg_restore` hung indefinitely on `pg_restore: connecting to database for restore` before timing out:
+```text
+pg_restore: error: connection to server at "database_endpoint" , port 5432 failed: Connection timed out
+
+```
+
+
+* **Root Cause:** The standard AWS RDS DNS endpoint resolved to an internal region-VPC IP  that was not routable across the Local Gateway on the Outposts network topology.
+* **Resolution:** Updated `TARGET_HOST` to use the Outposts Local Gateway / Private IP directly  and verified port availability using `nc`:
+```bash
+nc -zv localhostIp 5432
+export TARGET_HOST="localhost Ip"
+
+```
+
+
+
+---
+
+### Incident 3: Blank Role Context Traps (`SET ROLE ""`)
+
+* **Symptom:** During parallel directory restore (`-j 4`), `pg_restore` threw repeated errors across several tables:
+```text
+pg_restore: error: could not execute query: ERROR: zero-length delimited identifier at or near """"
+LINE 1: SET ROLE "";
+         ^
+pg_restore: while PROCESSING TOC:
+pg_restore: from TOC entry 232; 1259 22343 TABLE transaction_records taccs_clearing_service
+
+```
+
+
+* **Root Cause:** In PostgreSQL 14 $\rightarrow$ 17 migrations, objects owned by unmapped, blank, or dropped roles cause parallel `pg_restore` worker threads to attempt issuing `SET ROLE ""` to assume object contexts. PostgreSQL 17 strictly enforces string syntax and rejects empty role identifiers.
+* **Resolution:** Because `--no-owner` and `--no-acl` flags were specified, these errors were non-blocking warnings (`errors ignored on restore: 2`). Table schemas, primary keys, and data rows loaded successfully. Dedicated application owners (`_sa`) were created and assigned post-restore.
+
+---
+
+### Incident 4: Reassignment Privilege Denial (`permission denied to reassign objects`)
+
+* **Symptom:** When transferring table ownership to the newly created service accounts (`_sa`), PostgreSQL rejected the statement:
+```text
+database_3=> REASSIGN OWNED BY CURRENT_USER TO app_user_sa;
+ERROR: permission denied to reassign objects
+DETAIL: Only roles with privileges of role "taccs_clearing_db_sa" may reassign objects to it.
+
+```
+
+
+* **Root Cause:** PostgreSQL security models prevent a user (even a master user) from transferring object ownership to another role unless the executing user is an explicit member of that target role.
+* **Resolution:** Executed a 4-step role-elevation pattern to grant temporary membership, reassign ownership, and revoke membership:
 ```sql
+-- Executed per database (database_1, database_2, database_3)
+\c database_1
+
+-- 1. Create dedicated owner role
+CREATE USER app_user_sa WITH PASSWORD 'SecurePassword123!';
+
+-- 2. Grant temporary role membership to master user
+GRANT app_user_sa TO CURRENT_USER;
+
+-- 3. Reassign database, schema, and object ownership
+ALTER DATABASE database_1 OWNER TO app_user_sa;
+ALTER SCHEMA public OWNER TO app_user_sa;
+REASSIGN OWNED BY CURRENT_USER TO app_user_sa;
+
+-- 4. Revoke temporary membership
+REVOKE app_user_sa FROM CURRENT_USER;
+
+```
+
+
+
+---
+
+## Post-Migration Validation & Hardening
+
+After transferring object ownership to the `_sa` roles, execute privilege grants and rebuild query planner statistics:
+
+```sql
+-- 1. Re-grant explicit privileges on existing and future objects
+GRANT ALL PRIVILEGES ON SCHEMA public TO taccs_clearing_db_sa;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO taccs_clearing_db_sa;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO taccs_clearing_db_sa;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO taccs_clearing_db_sa;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO taccs_clearing_db_sa;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO taccs_clearing_db_sa;
+
+-- 2. Rebuild optimizer statistics for PostgreSQL 17 planner
 ANALYZE VERBOSE;
 
 ```
 
+### Row Count Parity Verification
 
-2. **Re-grant Application Permissions:**
+Run this on both source and target to confirm data consistency:
+
 ```sql
-GRANT ALL ON SCHEMA public TO app_owner_role;
-GRANT ALL ON ALL TABLES IN SCHEMA public TO app_owner_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO app_owner_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO app_owner_role;
-
-```
-
-
-3. **Data Parity Verification:**
-```sql
-SELECT schemaname, relname AS table_name, n_live_tup AS estimated_row_count 
-FROM pg_stat_user_tables 
+SELECT 
+    schemaname, 
+    relname AS table_name, 
+    n_live_tup AS estimated_row_count
+FROM pg_stat_user_tables
 ORDER BY relname;
-
 ```
-
-
-
-```
-
 ```
