@@ -10,6 +10,10 @@ When triaging a sudden database stall on an OLTP write path, the usual suspects 
 1. **No Long-Running Queries:** Querying `sys.dm_exec_requests` showed no multi-second blockers. Active `UPDATE` statements were completing in **~457 ms** with `wait_type = NULL` (actively burning CPU).
 2. **Zero Lock Contention or Deadlocks:** `blocking_session_id = 0` across the board; `Number of Deadlocks/sec = 0`.
 3. **Sub-Millisecond Storage Latency:** A 15-second differential snapshot of `sys.dm_io_virtual_file_stats` confirmed that both the Data file (`0.73 ms`) and Transaction Log (`0.36 ms`) were performing effortlessly:
+4. | Log can't be reused | `log_reuse_wait_desc = NOTHING`, 725 MB active log, 379 VLFs 
+5. | Memory or tempdb pressure | Page life expectancy flat at 8,193. tempdb used about 9 MB. Version store 1–2 MB
+
+**Page splits** jumped and stayed high for hours. A 30-second stall can't be explained by a rate that stayed flat for hours without a second stall. Splits and page writes rose together, which fits more write volume overall. We never ran the fragmentation checks, so we can't rule splits out as a *contributing* factor.
 
 | File Type | File Name | Writes (15s) | Avg Write Latency (ms) | Verdict |
 | :--- | :--- | :--- | :--- | :--- |
@@ -46,7 +50,13 @@ Plan Compiled At	Executions	Avg Logical Reads / Exec	Avg CPU (ms)	      Access M
 ```
 Instead of performing a lightweight Index Seek (~46 logical reads) to locate the single transaction row by [Id], SQL Server was executing a degraded plan compiled at 00:19:20 that performed hundreds of thousands of logical reads in memory on every single UPDATE.
 
-## 3. Root Cause Analysis: The Nightly Partition Switch Trap
+
+### Why we didn't see a "slow query"
+
+The statement never ran for seconds. It ran for hundreds of milliseconds, thousands of times a minute. A slow-query alert at 5 seconds would never fire. That's what makes this kind of regression a "ghost".
+
+## 3. Root Cause Analysis: The Nightly Partition Switch Trap ( Working Theory)
+
 
 Why did SQL Server suddenly compile a terrible plan at 00:19:20?
 
