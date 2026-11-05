@@ -25,6 +25,7 @@ I'm Seun, a Lead Database Engineer working across AWS, GCP, and Oracle Cloud, op
 -  [Multi-Terabyte Migration: AWS Aurora MySQL 8.0 to MySQL 8.4 on AWS Outposts](case-studies/19-Multi-Terabyte%20Migration%20from%20AWS%20Aurora%20MySQL%208.0%20to%20Outposts%20RDS%20(MySQL%208.4).md) — how we migrated 2.55 billion rows from AWS Aurora MySQL 8.0 to MySQL 8.4 on AWS Outposts using MySQL Shell and S3-based staging, excluded 63 historical archive tables, recovered from a mid-load network interruption, and validated row counts, database objects, and application transactions.
 - [Cross-Engine Migration from MySQL 8.4 to PostgreSQL 17 on AWS Outposts](case-studies/20-cross-engine-migration-from-mysql-8.4-to-postgresql-17-on-outposts.md) — how we executed a cross-engine schema and data transformation from MySQL 8.4 to PostgreSQL 17 on AWS Outposts using AWS SCT and AWS DMS, resolved sequence defaults and identifier casing mismatches, and validated data parity across cross-database paradigms.
 - [Multi-Database Migration: AWS Aurora PostgreSQL to AWS Outposts RDS via S3 Staging](case-studies/21-AWS%20Aurora%20PostgreSQL%20to%20AWS%20Outposts%20RDS%20Migration.md) — how we decoupled cross-network PostgreSQL dumps across hybrid cloud boundaries using `pg_dump` directory format (`-Fd`), staged archives through Amazon S3, resolved PostgreSQL 17 binary header incompatibilities (`1.16`), and fixed role reassignment traps (`SET ROLE ""`) with zero data loss.
+- [Catching a "Ghost" Execution Plan Regression After a Nightly Partition Switch](case-studies/23-Catching%20a%20%22Ghost%22%20Execution%20Plan%20Regression%20After%20a%20Nightly%20Partition%20Switch.md) — how a single-row status `UPDATE` on a SQL Server payments table regressed from ~46 to 200,000+ logical reads per call after recompiling shortly after a nightly partition switch, why it never appeared as a long-running query, a lock, or a disk problem, and how targeted plan eviction restored it in seconds, with Query Store and automatic plan correction added as guardrails.
 
 
 - More coming soon.
@@ -46,6 +47,7 @@ Practical, battle-tested scripts referenced in the case studies above, generaliz
 -  [scripts/rollback_reconciliation_new.py](case-studies/scripts/rollback-reconciliation.py) — multi-stage MySQL target-delta extraction, staging, classification, and verification reconciliation tool referenced in case study #11
 - [case-studies/scripts/pool-replenish/](case-studies/scripts/pool-replenish) — replica-aware pool monitoring Python orchestrator and micro-batched MySQL stored procedure for safe account recycling, referenced in case study #12
 - [case-studies/scripts/pool-replenish/watchdog/](case-studies/scripts/pool-replenish/watchdog) — non-invasive Python watchdog daemon and automated Markdown RCA report generator, referenced in case study #13
+-  [`sqlserver-query-store-morning-checks.sql`](case-studies/scripts/sqlserver-plan-regression/sqlserver-query-store-morning-checks.sql) — read-only daily health check for Query Store, forced plans, plan drift, and automatic tuning on SQL Server, referenced in case study #23
 
 ## About Me
 
