@@ -109,7 +109,26 @@ We enabled Query Store with strict boundaries (QUERY_CAPTURE_MODE = AUTO, WAIT_S
 
 Over the following 24 hours—across 681 consecutive recompiles, the 00:10 AM nightly partition switch, and a morning peak of >82,000 executions per 15 minutes—logical reads remained rock-steady at 34.5 to 42.4 reads per execution (3.6 ms CPU), using just 6 MB of Query Store storage.
 
-## 6. Key Takeaways for DBAs & SREs
+## 6. Morning Checks: Trust, but Verify
+
+Query Store and automatic plan correction are guardrails, not guarantees. Automatic tuning only reacts *after* a regression it can detect, and it stops working if Query Store fills up and goes read-only. For the first couple of weeks, we ran a short read-only check every morning, then moved to weekly.
+
+| Check | Pass | Escalate |
+|---|---|---|
+| Query Store state | `READ_WRITE`, under 80% of storage cap | `READ_ONLY`, or storage near full |
+| Forced plans | `force_failure_count = 0`, recently executed | Failures, or the forced plan idle while its query is busy |
+| Plans for the protected query (24h) | One or two plans, low and stable reads | A new `plan_id` with a large jump in reads |
+| Hourly trend | Flat through the maintenance window and morning peak | A spike or a climb |
+| Automatic tuning recommendations | None, or verified | Repeated recommendations on the same query |
+| Plan in cache vs forced plan | Hashes match | Mismatch: forcing may not be enforced |
+| CPU and app timeouts (outside SQL Server) | At baseline | Sustained rise |
+
+One lesson from this check: on our system, the plan we manually forced stopped running, and a different, equally healthy plan ran unforced. Performance stayed fine, but "forced" in the catalog didn't mean "forced" in practice. That's why the last check compares what's forced with what's actually running.
+
+Script: [`sqlserver-query-store-morning-checks.sql`](../case-studies/scripts/sqlserver-plan-regression/sqlserver-query-store-morning-checks.sql)
+
+
+## 7. Key Takeaways for DBAs & SREs
 
 1. "No Long-Running Queries" ≠ "Database is Fine": A 3ms query regressing to 450ms at 1,000+ requests/sec will melt your CPU and connection pools without ever showing up on a > 5s slow query alert.
 2. Always Check Logical Reads per Execution: When disk latency (sys.dm_io_virtual_file_stats) is < 1 ms and wait_type is NULL or SOS_SCHEDULER_YIELD, check total_logical_reads / execution_count in sys.dm_exec_query_stats.
